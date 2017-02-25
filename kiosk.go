@@ -39,65 +39,25 @@ func newServer(apiKey, authURL, templatePath string) (*server, error) {
 	return &server{client: c, template: t}, nil
 }
 
-func (s *server) handleEmblems(w http.ResponseWriter, r *http.Request) {
-	if !s.client.Authenticate(w, r) {
-		return
-	}
-	s.handleVendor(w, r, destinyapi.EmblemKioskVendor{})
+type kioskHandler struct {
+	server *server
+	vendor destinyapi.Vendor
 }
 
-func (s *server) handleShaders(w http.ResponseWriter, r *http.Request) {
-	if !s.client.Authenticate(w, r) {
+func (h kioskHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if !h.server.client.Authenticate(w, r) {
 		return
 	}
-	s.handleVendor(w, r, destinyapi.ShaderKioskVendor{})
-}
 
-func (s *server) handleShips(w http.ResponseWriter, r *http.Request) {
-	if !s.client.Authenticate(w, r) {
-		return
-	}
-	s.handleVendor(w, r, destinyapi.ShipKioskVendor{})
-}
-
-func (s *server) handleSparrows(w http.ResponseWriter, r *http.Request) {
-	if !s.client.Authenticate(w, r) {
-		return
-	}
-	s.handleVendor(w, r, destinyapi.SparrowKioskVendor{})
-}
-
-func (s *server) handleEmotes(w http.ResponseWriter, r *http.Request) {
-	if !s.client.Authenticate(w, r) {
-		return
-	}
-	s.handleVendor(w, r, destinyapi.EmoteKioskVendor{})
-}
-
-func (s *server) handleWeapons(w http.ResponseWriter, r *http.Request) {
-	if !s.client.Authenticate(w, r) {
-		return
-	}
-	s.handleVendor(w, r, destinyapi.ExoticWeaponKioskVendor{})
-}
-
-func (s *server) handleArmor(w http.ResponseWriter, r *http.Request) {
-	if !s.client.Authenticate(w, r) {
-		return
-	}
-	s.handleVendor(w, r, destinyapi.ExoticArmorKioskVendor{})
-}
-
-func (s *server) handleVendor(w http.ResponseWriter, r *http.Request, vendor destinyapi.Vendor) {
 	// Get the user info.
-	userResp, err := s.client.GetBungieNetUser()
+	userResp, err := h.server.client.GetBungieNetUser()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// Get the account info.
-	accountResp, err := s.client.GetBungieAccount(userResp.Response.User.MembershipID)
+	accountResp, err := h.server.client.GetBungieAccount(userResp.Response.User.MembershipID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -116,12 +76,12 @@ func (s *server) handleVendor(w http.ResponseWriter, r *http.Request, vendor des
 	}
 
 	// Get the vendor info.
-	vendorResp, err := s.client.MyCharacterVendorData(characterID, vendor.Hash())
+	vendorResp, err := h.server.client.MyCharacterVendorData(characterID, h.vendor.Hash())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	failureStrings := vendorResp.Response.Definitions.VendorDetails[vendor.Hash()].FailureStrings
+	failureStrings := vendorResp.Response.Definitions.VendorDetails[h.vendor.Hash()].FailureStrings
 
 	type Item struct {
 		Description string
@@ -144,7 +104,7 @@ func (s *server) handleVendor(w http.ResponseWriter, r *http.Request, vendor des
 		Categories []Category
 	}
 	data := Data{
-		Title: vendor.Name(),
+		Title: h.vendor.Name(),
 		User:  userResp.Response.User.DisplayName,
 	}
 	for _, account := range accountResp.Response.DestinyAccounts {
@@ -180,7 +140,7 @@ func (s *server) handleVendor(w http.ResponseWriter, r *http.Request, vendor des
 		data.Categories = append(data.Categories, category)
 	}
 
-	if err := s.template.Execute(w, data); err != nil {
+	if err := h.server.template.Execute(w, data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -201,13 +161,13 @@ func main() {
 	}
 
 	http.HandleFunc("/BungieAuthCallback", s.client.HandleBungieAuthCallback)
-	http.HandleFunc("/emblems", s.handleEmblems)
-	http.HandleFunc("/shaders", s.handleShaders)
-	http.HandleFunc("/ships", s.handleShips)
-	http.HandleFunc("/sparrows", s.handleSparrows)
-	http.HandleFunc("/emotes", s.handleEmotes)
-	http.HandleFunc("/weapons", s.handleWeapons)
-	http.HandleFunc("/armor", s.handleArmor)
+	http.Handle("/emblems", kioskHandler{s, destinyapi.EmblemKioskVendor{}})
+	http.Handle("/shaders", kioskHandler{s, destinyapi.ShaderKioskVendor{}})
+	http.Handle("/ships", kioskHandler{s, destinyapi.ShipKioskVendor{}})
+	http.Handle("/sparrows", kioskHandler{s, destinyapi.SparrowKioskVendor{}})
+	http.Handle("/emotes", kioskHandler{s, destinyapi.EmoteKioskVendor{}})
+	http.Handle("/weapons", kioskHandler{s, destinyapi.ExoticWeaponKioskVendor{}})
+	http.Handle("/armor", kioskHandler{s, destinyapi.ExoticArmorKioskVendor{}})
 	if err := http.ListenAndServeTLS(*addr, *tlsCertPath, *tlsKeyPath, nil); err != nil {
 		log.Fatal(err)
 	}
