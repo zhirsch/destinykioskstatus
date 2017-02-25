@@ -13,8 +13,8 @@ import (
 
 var (
 	addr         = flag.String("addr", ":443", "The address to listen on.")
-	apiKey       = flag.String("apikey", "84fb2e09fafe4573bbc45e5c013c9029", "The Bungie API key.")
-	authURL      = flag.String("authurl", "https://www.bungie.net/en/Application/Authorize/11251", "The Bungie auth URL.")
+	apiKey       = flag.String("apikey", "", "The Bungie API key.")
+	authURL      = flag.String("authurl", "", "The Bungie auth URL.")
 	templatePath = flag.String("template", "kiosk.html", "The path to the HTML template file.")
 	tlsCertPath  = flag.String("tlscert", "server.crt", "The path to the  TLS certificate file.")
 	tlsKeyPath   = flag.String("tlskey", "server.key", "The path to the TLS key file.")
@@ -188,6 +188,12 @@ func (s *server) handleVendor(w http.ResponseWriter, r *http.Request, vendor des
 
 func main() {
 	flag.Parse()
+	if *apiKey == "" {
+		log.Fatal("need to provide --apikey")
+	}
+	if *authURL == "" {
+		log.Fatal("need to provide --authurl")
+	}
 
 	s, err := newServer(*apiKey, *authURL, *templatePath)
 	if err != nil {
