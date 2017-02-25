@@ -12,6 +12,7 @@ import (
 )
 
 var (
+	addr         = flag.String("addr", ":443", "The address to listen on.")
 	apiKey       = flag.String("apikey", "84fb2e09fafe4573bbc45e5c013c9029", "The Bungie API key.")
 	authURL      = flag.String("authurl", "https://www.bungie.net/en/Application/Authorize/11251", "The Bungie auth URL.")
 	templatePath = flag.String("template", "kiosk.html", "The path to the HTML template file.")
@@ -203,7 +204,7 @@ func main() {
 	http.HandleFunc("/emotes", s.handleEmotes)
 	http.HandleFunc("/weapons", s.handleWeapons)
 	http.HandleFunc("/armor", s.handleArmor)
-	if err := http.ListenAndServeTLS(":8080", *tlsCertPath, *tlsKeyPath, nil); err != nil {
+	if err := http.ListenAndServeTLS(*addr, *tlsCertPath, *tlsKeyPath, nil); err != nil {
 		log.Fatal(err)
 	}
 }
