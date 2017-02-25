@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"html/template"
 	"log"
@@ -10,9 +11,12 @@ import (
 	"github.com/zhirsch/destinyapi"
 )
 
-const (
-	apiKey  = "84fb2e09fafe4573bbc45e5c013c9029"
-	authURL = "https://www.bungie.net/en/Application/Authorize/11251"
+var (
+	apiKey       = flag.String("apikey", "84fb2e09fafe4573bbc45e5c013c9029", "The Bungie API key.")
+	authURL      = flag.String("authurl", "https://www.bungie.net/en/Application/Authorize/11251", "The Bungie auth URL.")
+	templatePath = flag.String("template", "kiosk.html", "The path to the HTML template file.")
+	tlsCertPath  = flag.String("tlscert", "server.crt", "The path to the  TLS certificate file.")
+	tlsKeyPath   = flag.String("tlskey", "server.key", "The path to the TLS key file.")
 )
 
 type server struct {
@@ -20,13 +24,13 @@ type server struct {
 	template *template.Template
 }
 
-func newServer() (*server, error) {
+func newServer(apiKey, authURL, templatePath string) (*server, error) {
 	c, err := destinyapi.NewClient(apiKey, authURL)
 	if err != nil {
 		return nil, err
 	}
 
-	t, err := template.ParseFiles("kiosk.html")
+	t, err := template.ParseFiles(templatePath)
 	if err != nil {
 		return nil, err
 	}
@@ -177,17 +181,16 @@ func (s *server) handleVendor(w http.ResponseWriter, r *http.Request, vendorHash
 		data.Categories = append(data.Categories, category)
 	}
 
-	if t, err := template.ParseFiles("kiosk.html"); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	} else if err := t.Execute(w, data); err != nil {
+	if err := s.template.Execute(w, data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
 
 func main() {
-	s, err := newServer()
+	flag.Parse()
+
+	s, err := newServer(*apiKey, *authURL, *templatePath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -200,5 +203,7 @@ func main() {
 	http.HandleFunc("/emotes", s.handleEmotes)
 	http.HandleFunc("/weapons", s.handleWeapons)
 	http.HandleFunc("/armor", s.handleArmor)
-	http.ListenAndServeTLS(":8080", "server.crt", "server.key", nil)
+	if err := http.ListenAndServeTLS(":8080", *tlsCertPath, *tlsKeyPath, nil); err != nil {
+		log.Fatal(err)
+	}
 }
