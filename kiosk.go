@@ -165,7 +165,7 @@ func (s *server) handleVendor(w http.ResponseWriter, r *http.Request, vendorHash
 			definition := vendorResp.Response.Definitions.Items[itemHashString]
 
 			item := Item{
-				Icon: fmt.Sprintf("http://www.bungie.net%s", definition.Icon),
+				Icon: fmt.Sprintf("https://www.bungie.net%s", definition.Icon),
 			}
 			if len(saleItem.FailureIndexes) == 0 {
 				item.Description = definition.ItemName
