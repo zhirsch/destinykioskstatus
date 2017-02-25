@@ -43,52 +43,52 @@ func (s *server) handleEmblems(w http.ResponseWriter, r *http.Request) {
 	if !s.client.Authenticate(w, r) {
 		return
 	}
-	s.handleVendor(w, r, destinyapi.EmblemKioskVendorHash, "Emblems")
+	s.handleVendor(w, r, destinyapi.EmblemKioskVendor{})
 }
 
 func (s *server) handleShaders(w http.ResponseWriter, r *http.Request) {
 	if !s.client.Authenticate(w, r) {
 		return
 	}
-	s.handleVendor(w, r, destinyapi.ShaderKioskVendorHash, "Shaders")
+	s.handleVendor(w, r, destinyapi.ShaderKioskVendor{})
 }
 
 func (s *server) handleShips(w http.ResponseWriter, r *http.Request) {
 	if !s.client.Authenticate(w, r) {
 		return
 	}
-	s.handleVendor(w, r, destinyapi.ShipKioskVendorHash, "Ships")
+	s.handleVendor(w, r, destinyapi.ShipKioskVendor{})
 }
 
 func (s *server) handleSparrows(w http.ResponseWriter, r *http.Request) {
 	if !s.client.Authenticate(w, r) {
 		return
 	}
-	s.handleVendor(w, r, destinyapi.SparrowKioskVendorHash, "Sparrows")
+	s.handleVendor(w, r, destinyapi.SparrowKioskVendor{})
 }
 
 func (s *server) handleEmotes(w http.ResponseWriter, r *http.Request) {
 	if !s.client.Authenticate(w, r) {
 		return
 	}
-	s.handleVendor(w, r, destinyapi.EmoteKioskVendorHash, "Emotes")
+	s.handleVendor(w, r, destinyapi.EmoteKioskVendor{})
 }
 
 func (s *server) handleWeapons(w http.ResponseWriter, r *http.Request) {
 	if !s.client.Authenticate(w, r) {
 		return
 	}
-	s.handleVendor(w, r, destinyapi.ExoticWeaponKioskVendorHash, "Exotic Weapons")
+	s.handleVendor(w, r, destinyapi.ExoticWeaponKioskVendor{})
 }
 
 func (s *server) handleArmor(w http.ResponseWriter, r *http.Request) {
 	if !s.client.Authenticate(w, r) {
 		return
 	}
-	s.handleVendor(w, r, destinyapi.ExoticArmorKioskVendorHash, "Exotic Armor")
+	s.handleVendor(w, r, destinyapi.ExoticArmorKioskVendor{})
 }
 
-func (s *server) handleVendor(w http.ResponseWriter, r *http.Request, vendorHash int, title string) {
+func (s *server) handleVendor(w http.ResponseWriter, r *http.Request, vendor destinyapi.Vendor) {
 	// Get the user info.
 	userResp, err := s.client.GetBungieNetUser()
 	if err != nil {
@@ -116,14 +116,12 @@ func (s *server) handleVendor(w http.ResponseWriter, r *http.Request, vendorHash
 	}
 
 	// Get the vendor info.
-	vendorHashString := fmt.Sprintf("%v", vendorHash)
-	vendorResp, err := s.client.MyCharacterVendorData(characterID, vendorHashString)
+	vendorResp, err := s.client.MyCharacterVendorData(characterID, vendor.Hash())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	failureStrings := vendorResp.Response.Definitions.VendorDetails[vendorHashString].FailureStrings
+	failureStrings := vendorResp.Response.Definitions.VendorDetails[vendor.Hash()].FailureStrings
 
 	type Item struct {
 		Description string
@@ -146,7 +144,7 @@ func (s *server) handleVendor(w http.ResponseWriter, r *http.Request, vendorHash
 		Categories []Category
 	}
 	data := Data{
-		Title: title,
+		Title: vendor.Name(),
 		User:  userResp.Response.User.DisplayName,
 	}
 	for _, account := range accountResp.Response.DestinyAccounts {
