@@ -13,16 +13,16 @@ type Token struct {
 	Expires time.Time
 }
 
-func (t Token) isReady() bool {
+func (t Token) IsReady() bool {
 	return time.Now().After(t.Ready)
 }
 
-func (t Token) isExpired() bool {
+func (t Token) IsExpired() bool {
 	return time.Now().After(t.Expires)
 }
 
 func (c *Client) Authenticate(w http.ResponseWriter, r *http.Request) bool {
-	if !c.AuthToken.isExpired() {
+	if !c.AuthToken.IsExpired() {
 		return true
 	}
 
@@ -43,59 +43,44 @@ func (c *Client) HandleBungieAuthCallback(w http.ResponseWriter, r *http.Request
 	// Validate the incoming query.
 	query := r.URL.Query()
 	if _, ok := query["code"]; !ok {
-		http.Error(w, fmt.Sprintf("no 'code' in request: %s", r.URL),
-			http.StatusInternalServerError)
-		return
+		panic(fmt.Sprintf("no 'code' in request: %s", r.URL))
 	} else if len(query["code"]) != 1 {
-		http.Error(w, fmt.Sprintf("multiple 'code' in request: %s", r.URL),
-			http.StatusInternalServerError)
-		return
+		panic(fmt.Sprintf("multiple 'code' in request: %s", r.URL))
 	} else if _, ok := query["state"]; !ok {
-		http.Error(w, fmt.Sprintf("no `state` in request: %s", r.URL),
-			http.StatusInternalServerError)
-		return
+		panic(fmt.Sprintf("no `state` in request: %s", r.URL))
 	} else if len(query["state"]) != 1 {
-		http.Error(w, fmt.Sprintf("too many `state` in request: %s", r.URL),
-			http.StatusInternalServerError)
-		return
+		panic(fmt.Sprintf("too many `state` in request: %s", r.URL))
 	}
 
 	// Prepare the request body.
 	req := GetAccessTokensFromCodeRequest{Code: query["code"][0]}
 	body, err := encode(req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		panic(err)
 	}
 
 	// Send the HTTP request.
 	httpReq, err := http.NewRequest("POST", req.URL(), body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		panic(err)
 	}
 	httpReq.Header.Add("Content-Type", "application/json")
 	httpReq.Header.Add("X-API-Key", c.apiKey)
 	httpResp, err := c.httpClient.Do(httpReq)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		panic(err)
 	}
 	if httpResp.StatusCode != http.StatusOK {
-		http.Error(w, fmt.Sprintf("bad response: %v", httpResp.StatusCode),
-			http.StatusInternalServerError)
-		return
+		panic(fmt.Sprintf("bad response: %v", httpResp.StatusCode))
 	}
 
 	// Parse the HTTP response.
 	var resp GetAccessTokensFromCodeResponse
 	if err := decode(&resp, httpResp.Body); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		panic(err)
 	}
 	if resp.ErrorCode != 1 {
-		http.Error(w, fmt.Sprintf("bad message: %+v", resp), http.StatusInternalServerError)
-		return
+		panic(fmt.Sprintf("bad message: %+v", resp))
 	}
 
 	// Create the tokens.

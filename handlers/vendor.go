@@ -18,7 +18,7 @@ func (h VendorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	user, err := h.Server.GetUser(w, r)
 	if err != nil {
 		if err != server.ErrNeedAuth {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			panic(err)
 		}
 		return
 	}
@@ -26,8 +26,7 @@ func (h VendorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Get the account info.
 	accountResp, err := h.Server.API.GetBungieAccount(user.ID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		panic(err)
 	}
 
 	// Get the character to display info for.  If there isn't a character,
@@ -45,8 +44,7 @@ func (h VendorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Get the vendor info.
 	vendorResp, err := h.Server.API.MyCharacterVendorData(characterID, h.Vendor.Hash())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		panic(err)
 	}
 	failureStrings := vendorResp.Response.Definitions.VendorDetails[h.Vendor.Hash()].FailureStrings
 
@@ -108,7 +106,6 @@ func (h VendorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.Server.Template.Execute(w, data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		panic(err)
 	}
 }

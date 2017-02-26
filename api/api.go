@@ -50,7 +50,7 @@ func (c *Client) get(req Request, resp Response) error {
 		return err
 	}
 	if resp.GetHeader().ErrorCode != 1 {
-		return fmt.Errorf("bad message: %v", resp)
+		return fmt.Errorf("bad message: %+v", resp)
 	}
 	return nil
 }
