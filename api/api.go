@@ -4,7 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"time"
+
+	"github.com/cenkalti/backoff"
 )
 
 type Client struct {
@@ -67,17 +71,29 @@ func (c *Client) post(req Request, resp Response) {
 
 func (c *Client) do(httpReq *http.Request, resp Response) {
 	httpReq.Header.Add("X-API-Key", c.apiKey)
-	httpResp, err := http.DefaultClient.Do(httpReq)
+	err := backoff.RetryNotify(
+		func() error {
+			httpResp, err := http.DefaultClient.Do(httpReq)
+			if err != nil {
+				return err
+			}
+			if httpResp.StatusCode != http.StatusOK {
+				return fmt.Errorf("bad response: %v", httpResp.StatusCode)
+			}
+			if err := json.NewDecoder(httpResp.Body).Decode(resp); err != nil {
+				return err
+			}
+			if resp.GetHeader().ErrorCode != 1 {
+				return fmt.Errorf("bad message: %+v", resp)
+			}
+			return nil
+		},
+		backoff.NewExponentialBackOff(),
+		func(err error, dur time.Duration) {
+			log.Printf("retrying: %v", err)
+		},
+	)
 	if err != nil {
 		panic(err)
-	}
-	if httpResp.StatusCode != http.StatusOK {
-		panic(fmt.Sprintf("bad response: %v", httpResp.StatusCode))
-	}
-	if err := json.NewDecoder(httpResp.Body).Decode(resp); err != nil {
-		panic(err)
-	}
-	if resp.GetHeader().ErrorCode != 1 {
-		panic(fmt.Sprintf("bad message: %+v", resp))
 	}
 }
