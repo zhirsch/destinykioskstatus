@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/zhirsch/destinyapi"
+	"github.com/zhirsch/destinykioskstatus/api"
 )
 
 var (
@@ -21,12 +21,12 @@ var (
 )
 
 type server struct {
-	client   *destinyapi.Client
+	client   *api.Client
 	template *template.Template
 }
 
 func newServer(apiKey, authURL, templatePath string) (*server, error) {
-	c, err := destinyapi.NewClient(apiKey, authURL)
+	c, err := api.NewClient(apiKey, authURL)
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +41,7 @@ func newServer(apiKey, authURL, templatePath string) (*server, error) {
 
 type kioskHandler struct {
 	server *server
-	vendor destinyapi.Vendor
+	vendor api.Vendor
 }
 
 func (h kioskHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -161,13 +161,13 @@ func main() {
 	}
 
 	http.HandleFunc("/BungieAuthCallback", s.client.HandleBungieAuthCallback)
-	http.Handle("/emblems", kioskHandler{s, destinyapi.EmblemKioskVendor{}})
-	http.Handle("/shaders", kioskHandler{s, destinyapi.ShaderKioskVendor{}})
-	http.Handle("/ships", kioskHandler{s, destinyapi.ShipKioskVendor{}})
-	http.Handle("/sparrows", kioskHandler{s, destinyapi.SparrowKioskVendor{}})
-	http.Handle("/emotes", kioskHandler{s, destinyapi.EmoteKioskVendor{}})
-	http.Handle("/weapons", kioskHandler{s, destinyapi.ExoticWeaponKioskVendor{}})
-	http.Handle("/armor", kioskHandler{s, destinyapi.ExoticArmorKioskVendor{}})
+	http.Handle("/emblems", kioskHandler{s, api.EmblemKioskVendor{}})
+	http.Handle("/shaders", kioskHandler{s, api.ShaderKioskVendor{}})
+	http.Handle("/ships", kioskHandler{s, api.ShipKioskVendor{}})
+	http.Handle("/sparrows", kioskHandler{s, api.SparrowKioskVendor{}})
+	http.Handle("/emotes", kioskHandler{s, api.EmoteKioskVendor{}})
+	http.Handle("/weapons", kioskHandler{s, api.ExoticWeaponKioskVendor{}})
+	http.Handle("/armor", kioskHandler{s, api.ExoticArmorKioskVendor{}})
 	if err := http.ListenAndServeTLS(*addr, *tlsCertPath, *tlsKeyPath, nil); err != nil {
 		log.Fatal(err)
 	}
