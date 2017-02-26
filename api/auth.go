@@ -7,22 +7,22 @@ import (
 	"time"
 )
 
-type token struct {
-	value   string
-	ready   time.Time
-	expires time.Time
+type Token struct {
+	Value   string
+	Ready   time.Time
+	Expires time.Time
 }
 
-func (t token) isReady() bool {
-	return time.Now().After(t.ready)
+func (t Token) isReady() bool {
+	return time.Now().After(t.Ready)
 }
 
-func (t token) isExpired() bool {
-	return time.Now().After(t.expires)
+func (t Token) isExpired() bool {
+	return time.Now().After(t.Expires)
 }
 
 func (c *Client) Authenticate(w http.ResponseWriter, r *http.Request) bool {
-	if !c.authToken.isExpired() {
+	if !c.AuthToken.isExpired() {
 		return true
 	}
 
@@ -100,15 +100,15 @@ func (c *Client) HandleBungieAuthCallback(w http.ResponseWriter, r *http.Request
 
 	// Create the tokens.
 	now := time.Now()
-	c.authToken = token{
-		value:   resp.Response.AccessToken.Value,
-		ready:   now.Add(time.Duration(resp.Response.AccessToken.ReadyIn) * time.Second),
-		expires: now.Add(time.Duration(resp.Response.AccessToken.Expires) * time.Second),
+	c.AuthToken = &Token{
+		Value:   resp.Response.AccessToken.Value,
+		Ready:   now.Add(time.Duration(resp.Response.AccessToken.ReadyIn) * time.Second),
+		Expires: now.Add(time.Duration(resp.Response.AccessToken.Expires) * time.Second),
 	}
-	c.refreshToken = token{
-		value:   resp.Response.RefreshToken.Value,
-		ready:   now.Add(time.Duration(resp.Response.RefreshToken.ReadyIn) * time.Second),
-		expires: now.Add(time.Duration(resp.Response.RefreshToken.Expires) * time.Second),
+	c.RefreshToken = &Token{
+		Value:   resp.Response.RefreshToken.Value,
+		Ready:   now.Add(time.Duration(resp.Response.RefreshToken.ReadyIn) * time.Second),
+		Expires: now.Add(time.Duration(resp.Response.RefreshToken.Expires) * time.Second),
 	}
 
 	// Redirect to the original URL.

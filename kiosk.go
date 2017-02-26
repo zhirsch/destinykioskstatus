@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"html/template"
@@ -11,32 +12,51 @@ import (
 	"github.com/zhirsch/destinykioskstatus/api"
 )
 
+const (
+	USER_COOKIE_NAME = "X-DestinyKioskStatus-User"
+)
+
 var (
 	addr         = flag.String("addr", ":443", "The address to listen on.")
 	apiKey       = flag.String("apikey", "", "The Bungie API key.")
 	authURL      = flag.String("authurl", "", "The Bungie auth URL.")
+	dbPath       = flag.String("db", "", "The path to the sqlite database.")
 	templatePath = flag.String("template", "kiosk.html", "The path to the HTML template file.")
 	tlsCertPath  = flag.String("tlscert", "server.crt", "The path to the  TLS certificate file.")
 	tlsKeyPath   = flag.String("tlskey", "server.key", "The path to the TLS key file.")
 )
 
 type server struct {
-	client   *api.Client
+	api      *api.Client
 	template *template.Template
+	db       *DB
 }
 
 func newServer(apiKey, authURL, templatePath string) (*server, error) {
-	c, err := api.NewClient(apiKey, authURL)
+	s := &server{}
+
+	api, err := api.NewClient(apiKey, authURL)
 	if err != nil {
 		return nil, err
+	} else {
+		s.api = api
 	}
 
 	t, err := template.ParseFiles(templatePath)
 	if err != nil {
 		return nil, err
+	} else {
+		s.template = t
 	}
 
-	return &server{client: c, template: t}, nil
+	db, err := NewDB(*dbPath)
+	if err != nil {
+		return nil, err
+	} else {
+		s.db = db
+	}
+
+	return s, nil
 }
 
 type kioskHandler struct {
@@ -44,20 +64,67 @@ type kioskHandler struct {
 	vendor api.Vendor
 }
 
-func (h kioskHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if !h.server.client.Authenticate(w, r) {
-		return
+var ErrNeedAuth = errors.New("ErrNeedAuth")
+
+func (h kioskHandler) getUserFromAuth(w http.ResponseWriter, r *http.Request) (*User, error) {
+	if !h.server.api.Authenticate(w, r) {
+		return nil, ErrNeedAuth
 	}
 
 	// Get the user info.
-	userResp, err := h.server.client.GetBungieNetUser()
+	userResp, err := h.server.api.GetBungieNetUser()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return nil, err
+	}
+
+	user := &User{
+		ID:           userResp.Response.User.MembershipID,
+		Name:         userResp.Response.User.DisplayName,
+		AuthToken:    h.server.api.AuthToken,
+		RefreshToken: h.server.api.RefreshToken,
+	}
+
+	// Insert the bungie auth into the database and set the cookie.
+	if err := h.server.db.InsertUser(user); err != nil {
+		log.Printf("unable to write bungie auth to db: %v", err)
+	}
+
+	http.SetCookie(w, &http.Cookie{Name: "X-DestinyKioskStatus-User", Value: user.ID})
+	return user, nil
+}
+
+func (h kioskHandler) getUser(w http.ResponseWriter, r *http.Request) (*User, error) {
+	// Get the cookie.
+	cookie, err := r.Cookie(USER_COOKIE_NAME)
+	if err == http.ErrNoCookie {
+		log.Print("user cookie not set; doing authentication")
+		return h.getUserFromAuth(w, r)
+	} else if err != nil {
+		return nil, err
+	}
+
+	// Get the bungie tokens from the db.
+	user, err := h.server.db.SelectUser(cookie.Value)
+	if err != nil {
+		log.Printf("no stored user for %v; doing authentication", cookie.Value)
+		return h.getUserFromAuth(w, r)
+	}
+	h.server.api.AuthToken = user.AuthToken
+	h.server.api.RefreshToken = user.RefreshToken
+	return user, nil
+}
+
+func (h kioskHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	user, err := h.getUser(w, r)
+	if err != nil {
+		if err != ErrNeedAuth {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
 	// Get the account info.
-	accountResp, err := h.server.client.GetBungieAccount(userResp.Response.User.MembershipID)
+	accountResp, err := h.server.api.GetBungieAccount(user.ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -76,7 +143,7 @@ func (h kioskHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get the vendor info.
-	vendorResp, err := h.server.client.MyCharacterVendorData(characterID, h.vendor.Hash())
+	vendorResp, err := h.server.api.MyCharacterVendorData(characterID, h.vendor.Hash())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -105,7 +172,7 @@ func (h kioskHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	data := Data{
 		Title: h.vendor.Name(),
-		User:  userResp.Response.User.DisplayName,
+		User:  user.Name,
 	}
 	for _, account := range accountResp.Response.DestinyAccounts {
 		for _, character := range account.Characters {
@@ -154,13 +221,16 @@ func main() {
 	if *authURL == "" {
 		log.Fatal("need to provide --authurl")
 	}
+	if *dbPath == "" {
+		log.Fatal("need to provide --db")
+	}
 
 	s, err := newServer(*apiKey, *authURL, *templatePath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	http.HandleFunc("/BungieAuthCallback", s.client.HandleBungieAuthCallback)
+	http.HandleFunc("/BungieAuthCallback", s.api.HandleBungieAuthCallback)
 	http.Handle("/emblems", kioskHandler{s, api.EmblemKioskVendor{}})
 	http.Handle("/shaders", kioskHandler{s, api.ShaderKioskVendor{}})
 	http.Handle("/ships", kioskHandler{s, api.ShipKioskVendor{}})

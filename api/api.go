@@ -12,8 +12,8 @@ type Client struct {
 
 	httpClient *http.Client
 
-	authToken    token
-	refreshToken token
+	AuthToken    *Token
+	RefreshToken *Token
 }
 
 func NewClient(apiKey, authURL string) (*Client, error) {
@@ -22,9 +22,11 @@ func NewClient(apiKey, authURL string) (*Client, error) {
 		return nil, err
 	}
 	return &Client{
-		apiKey:     apiKey,
-		authURL:    au,
-		httpClient: &http.Client{},
+		apiKey:       apiKey,
+		authURL:      au,
+		httpClient:   &http.Client{},
+		AuthToken:    &Token{},
+		RefreshToken: &Token{},
 	}, nil
 }
 
@@ -34,7 +36,7 @@ func (c *Client) get(req Request, resp Response) error {
 		return err
 	}
 	httpReq.Header.Add("X-API-Key", c.apiKey)
-	httpReq.Header.Add("Authorization", fmt.Sprintf("Bearer %s", c.authToken.value))
+	httpReq.Header.Add("Authorization", fmt.Sprintf("Bearer %s", c.AuthToken.Value))
 
 	httpResp, err := c.httpClient.Do(httpReq)
 	if err != nil {
