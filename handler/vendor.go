@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	"github.com/zhirsch/destinykioskstatus/api"
+	"github.com/zhirsch/destinykioskstatus/db"
 	"github.com/zhirsch/destinykioskstatus/server"
 )
 
@@ -14,17 +15,9 @@ type VendorHandler struct {
 	Vendor api.Vendor
 }
 
-func (h VendorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	user, err := h.Server.GetUser(w, r)
-	if err != nil {
-		if err != server.ErrNeedAuth {
-			panic(err)
-		}
-		return
-	}
-
+func (h VendorHandler) ServeHTTP(u *db.User, w http.ResponseWriter, r *http.Request) {
 	// Get the account info.
-	accountResp, err := h.Server.API.GetBungieAccount(user.ID)
+	accountResp, err := h.Server.API.GetBungieAccount(u.ID)
 	if err != nil {
 		panic(err)
 	}
@@ -70,7 +63,7 @@ func (h VendorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	data := Data{
 		Title: h.Vendor.Name(),
-		User:  user.Name,
+		User:  u.Name,
 	}
 	for _, account := range accountResp.Response.DestinyAccounts {
 		for _, character := range account.Characters {

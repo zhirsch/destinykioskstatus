@@ -2,10 +2,8 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"net/http"
-	"runtime/debug"
 
 	"github.com/zhirsch/destinykioskstatus/api"
 	"github.com/zhirsch/destinykioskstatus/handler"
@@ -21,20 +19,6 @@ var (
 	tlsCertPath  = flag.String("tlscert", "server.crt", "The path to the  TLS certificate file.")
 	tlsKeyPath   = flag.String("tlskey", "server.key", "The path to the TLS key file.")
 )
-
-type StackTraceMiddlewareHandler struct {
-	handler http.Handler
-}
-
-func (h StackTraceMiddlewareHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	defer func() {
-		if p := recover(); p != nil {
-			trace := debug.Stack()
-			http.Error(w, fmt.Sprintf("%v\n\n%v", p, string(trace)), http.StatusInternalServerError)
-		}
-	}()
-	h.handler.ServeHTTP(w, r)
-}
 
 func main() {
 	flag.Parse()
@@ -54,6 +38,9 @@ func main() {
 	}
 
 	handlers := map[string]http.Handler{
+		"/BungieAuthCallback": http.HandlerFunc(s.API.HandleBungieAuthCallback),
+	}
+	authedHandlers := map[string]handler.Handler{
 		"/emblems":  handler.VendorHandler{s, api.EmblemKioskVendor{}},
 		"/shaders":  handler.VendorHandler{s, api.ShaderKioskVendor{}},
 		"/ships":    handler.VendorHandler{s, api.ShipKioskVendor{}},
@@ -61,11 +48,12 @@ func main() {
 		"/emotes":   handler.VendorHandler{s, api.EmoteKioskVendor{}},
 		"/weapons":  handler.VendorHandler{s, api.ExoticWeaponKioskVendor{}},
 		"/armor":    handler.VendorHandler{s, api.ExoticArmorKioskVendor{}},
-
-		"/BungieAuthCallback": http.HandlerFunc(s.API.HandleBungieAuthCallback),
 	}
-	for pattern, handler := range handlers {
-		http.Handle(pattern, StackTraceMiddlewareHandler{handler})
+	for p, h := range authedHandlers {
+		handlers[p] = handler.AuthenticationMiddlewareHandler{s, h}
+	}
+	for p, h := range handlers {
+		http.Handle(p, handler.StackTraceMiddlewareHandler{h})
 	}
 
 	if err := http.ListenAndServeTLS(*addr, *tlsCertPath, *tlsKeyPath, nil); err != nil {
