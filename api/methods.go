@@ -1,23 +1,8 @@
 package api
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io"
 )
-
-// Encode marshals a request to bytes for sending to an API endpoint.
-func encode(i interface{}) (io.Reader, error) {
-	buf := new(bytes.Buffer)
-	err := json.NewEncoder(buf).Encode(i)
-	return buf, err
-}
-
-// Decode unmarshals a response from an API endpoint.
-func decode(i interface{}, r io.Reader) error {
-	return json.NewDecoder(r).Decode(i)
-}
 
 type Request interface {
 	URL() string

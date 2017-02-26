@@ -17,10 +17,7 @@ type VendorHandler struct {
 
 func (h VendorHandler) ServeHTTP(u *db.User, w http.ResponseWriter, r *http.Request) {
 	// Get the account info.
-	accountResp, err := h.Server.API.GetBungieAccount(u.ID)
-	if err != nil {
-		panic(err)
-	}
+	accountResp := h.Server.API.GetBungieAccount(u.AuthToken.Value, u.ID)
 
 	// Get the character to display info for.  If there isn't a character,
 	// redirect to the first character.
@@ -35,10 +32,7 @@ func (h VendorHandler) ServeHTTP(u *db.User, w http.ResponseWriter, r *http.Requ
 	}
 
 	// Get the vendor info.
-	vendorResp, err := h.Server.API.MyCharacterVendorData(characterID, h.Vendor.Hash())
-	if err != nil {
-		panic(err)
-	}
+	vendorResp := h.Server.API.MyCharacterVendorData(u.AuthToken.Value, characterID, h.Vendor.Hash())
 	failureStrings := vendorResp.Response.Definitions.VendorDetails[h.Vendor.Hash()].FailureStrings
 
 	type Item struct {

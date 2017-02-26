@@ -2,15 +2,13 @@ package db
 
 import (
 	"fmt"
-
-	"github.com/zhirsch/destinykioskstatus/api"
 )
 
 type User struct {
 	ID           string
 	Name         string
-	AuthToken    *api.Token
-	RefreshToken *api.Token
+	AuthToken    Token
+	RefreshToken Token
 }
 
 func (db *DB) SelectUser(id string) (*User, error) {
@@ -24,10 +22,7 @@ func (db *DB) SelectUser(id string) (*User, error) {
 		return nil, fmt.Errorf("no rows for %v", id)
 	}
 
-	user := &User{
-		AuthToken:    &api.Token{},
-		RefreshToken: &api.Token{},
-	}
+	user := &User{}
 	err = rows.Scan(
 		&user.ID,
 		&user.Name,

@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"net/url"
 
 	"github.com/zhirsch/destinykioskstatus/api"
 	"github.com/zhirsch/destinykioskstatus/handler"
@@ -32,13 +33,18 @@ func main() {
 		log.Fatal("need to provide --db")
 	}
 
-	s, err := server.NewServer(*apiKey, *authURL, *templatePath, *dbPath)
+	s, err := server.NewServer(*apiKey, *templatePath, *dbPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	authURL, err := url.ParseRequestURI(*authURL)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	handlers := map[string]http.Handler{
-		"/BungieAuthCallback": http.HandlerFunc(s.API.HandleBungieAuthCallback),
+		"/BungieAuthCallback": handler.BungieAuthCallbackHandler{s},
 	}
 	authedHandlers := map[string]handler.Handler{
 		"/emblems":  handler.VendorHandler{s, api.EmblemKioskVendor{}},
@@ -50,7 +56,7 @@ func main() {
 		"/armor":    handler.VendorHandler{s, api.ExoticArmorKioskVendor{}},
 	}
 	for p, h := range authedHandlers {
-		handlers[p] = handler.AuthenticationMiddlewareHandler{s, h}
+		handlers[p] = handler.AuthenticationMiddlewareHandler{s, h, authURL}
 	}
 	for p, h := range handlers {
 		http.Handle(p, handler.StackTraceMiddlewareHandler{h})
