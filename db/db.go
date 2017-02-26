@@ -1,11 +1,10 @@
-package main
+package db
 
 import (
 	"database/sql"
 	"fmt"
 
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/zhirsch/destinykioskstatus/api"
 )
 
 type DB struct {
@@ -13,13 +12,6 @@ type DB struct {
 
 	selectUserStmt *sql.Stmt
 	insertUserStmt *sql.Stmt
-}
-
-type User struct {
-	ID           string
-	Name         string
-	AuthToken    *api.Token
-	RefreshToken *api.Token
 }
 
 func NewDB(path string) (*DB, error) {
@@ -87,54 +79,4 @@ INSERT OR REPLACE INTO Users(
 	}
 
 	return db, nil
-}
-
-func (db *DB) SelectUser(id string) (*User, error) {
-	rows, err := db.selectUserStmt.Query(id)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	if !rows.Next() {
-		return nil, fmt.Errorf("no rows for %v", id)
-	}
-
-	user := &User{
-		AuthToken:    &api.Token{},
-		RefreshToken: &api.Token{},
-	}
-	err = rows.Scan(
-		&user.ID,
-		&user.Name,
-		&user.AuthToken.Value,
-		&user.AuthToken.Ready,
-		&user.AuthToken.Expires,
-		&user.RefreshToken.Value,
-		&user.RefreshToken.Ready,
-		&user.RefreshToken.Expires,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	if rows.Next() {
-		return nil, fmt.Errorf("too many rows for %v", id)
-	}
-
-	return user, nil
-}
-
-func (db *DB) InsertUser(user *User) error {
-	_, err := db.insertUserStmt.Exec(
-		user.ID,
-		user.Name,
-		user.AuthToken.Value,
-		user.AuthToken.Ready,
-		user.AuthToken.Expires,
-		user.RefreshToken.Value,
-		user.RefreshToken.Ready,
-		user.RefreshToken.Expires,
-	)
-	return err
 }

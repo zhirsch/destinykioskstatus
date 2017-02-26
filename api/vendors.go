@@ -125,7 +125,7 @@ type VanguardVendor struct{}
 func (VanguardVendor) Hash() string { return "2668878854" }
 func (VanguardVendor) Name() string { return "Vanguard" }
 
-type ZavallaVendor struct{}
+type ZavalaVendor struct{}
 
-func (ZavallaVendor) Hash() string { return "1990950" }
-func (ZavallaVendor) Name() string { return "Zavalla" }
+func (ZavalaVendor) Hash() string { return "1990950" }
+func (ZavalaVendor) Name() string { return "Zavala" }
