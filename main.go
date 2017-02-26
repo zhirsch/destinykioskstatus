@@ -8,7 +8,7 @@ import (
 	"runtime/debug"
 
 	"github.com/zhirsch/destinykioskstatus/api"
-	"github.com/zhirsch/destinykioskstatus/handlers"
+	"github.com/zhirsch/destinykioskstatus/handler"
 	"github.com/zhirsch/destinykioskstatus/server"
 )
 
@@ -54,13 +54,13 @@ func main() {
 	}
 
 	handlers := map[string]http.Handler{
-		"/emblems":  handlers.VendorHandler{s, api.EmblemKioskVendor{}},
-		"/shaders":  handlers.VendorHandler{s, api.ShaderKioskVendor{}},
-		"/ships":    handlers.VendorHandler{s, api.ShipKioskVendor{}},
-		"/sparrows": handlers.VendorHandler{s, api.SparrowKioskVendor{}},
-		"/emotes":   handlers.VendorHandler{s, api.EmoteKioskVendor{}},
-		"/weapons":  handlers.VendorHandler{s, api.ExoticWeaponKioskVendor{}},
-		"/armor":    handlers.VendorHandler{s, api.ExoticArmorKioskVendor{}},
+		"/emblems":  handler.VendorHandler{s, api.EmblemKioskVendor{}},
+		"/shaders":  handler.VendorHandler{s, api.ShaderKioskVendor{}},
+		"/ships":    handler.VendorHandler{s, api.ShipKioskVendor{}},
+		"/sparrows": handler.VendorHandler{s, api.SparrowKioskVendor{}},
+		"/emotes":   handler.VendorHandler{s, api.EmoteKioskVendor{}},
+		"/weapons":  handler.VendorHandler{s, api.ExoticWeaponKioskVendor{}},
+		"/armor":    handler.VendorHandler{s, api.ExoticArmorKioskVendor{}},
 
 		"/BungieAuthCallback": http.HandlerFunc(s.API.HandleBungieAuthCallback),
 	}
