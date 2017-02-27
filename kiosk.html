@@ -23,8 +23,8 @@
       }
     </style>
     <script>
-      function switchCharacter(id) {
-        document.location = window.location.pathname + '?c=' + id
+      function switchCharacter(url) {
+        document.location = url;
       }
     </script>
   </head>
@@ -32,23 +32,23 @@
     <div>
       {{.User}}
       &mdash;
-      <a href="/emblems">Emblems</a>
+      <a href="/emblems?c={{.CurrentCharacter}}">Emblems</a>
       &bullet;
-      <a href="/shaders">Shaders</a>
+      <a href="/shaders?c={{.CurrentCharacter}}">Shaders</a>
       &bullet;
-      <a href="/ships">Ships</a>
+      <a href="/ships?c={{.CurrentCharacter}}">Ships</a>
       &bullet;
-      <a href="/sparrows">Sparrows</a>
+      <a href="/sparrows?c={{.CurrentCharacter}}">Sparrows</a>
       &bullet;
-      <a href="/emotes">Emotes</a>
+      <a href="/emotes?c={{.CurrentCharacter}}">Emotes</a>
       &bullet;
-      <a href="/weapons">Weapons</a>
+      <a href="/weapons?c={{.CurrentCharacter}}">Weapons</a>
       &bullet;
-      <a href="/armor">Armor</a>
+      <a href="/armor?c={{.CurrentCharacter}}">Armor</a>
       &mdash;
       <select onchange="switchCharacter(this.value)">
         {{range .Characters}}
-        <option value="{{.ID}}" {{if .Current}}selected="selected"{{end}}>{{.Class}}</option>
+        <option value="{{.URL}}" {{if .Current}}selected="selected"{{end}}>{{.Class}}</option>
         {{end}}
       </select>
     </div>

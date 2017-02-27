@@ -15,6 +15,22 @@ type VendorHandler struct {
 	Vendor api.Vendor
 }
 
+func makeURL(u *url.URL, args ...string) *url.URL {
+	if len(args)%2 != 0 {
+		panic(fmt.Errorf("len(args) must be a multiple of two"))
+	}
+
+	var v url.URL = *u
+
+	q := v.Query()
+	for i := 0; i < len(args); i += 2 {
+		q.Set(args[i], args[i+1])
+	}
+	v.RawQuery = q.Encode()
+
+	return &v
+}
+
 func (h VendorHandler) ServeHTTP(u *db.User, w http.ResponseWriter, r *http.Request) {
 	// Get the account info.
 	accountResp := h.Server.API.GetBungieAccount(u.AuthToken.Value, u.ID)
@@ -23,10 +39,7 @@ func (h VendorHandler) ServeHTTP(u *db.User, w http.ResponseWriter, r *http.Requ
 	// redirect to the first character.
 	characterID := r.URL.Query().Get("c")
 	if characterID == "" {
-		var u url.URL = *r.URL
-		q := u.Query()
-		q.Set("c", accountResp.Response.DestinyAccounts[0].Characters[0].CharacterID)
-		u.RawQuery = q.Encode()
+		u := makeURL(r.URL, "c", accountResp.Response.DestinyAccounts[0].Characters[0].CharacterID)
 		http.Redirect(w, r, u.String(), http.StatusFound)
 		return
 	}
@@ -48,16 +61,19 @@ func (h VendorHandler) ServeHTTP(u *db.User, w http.ResponseWriter, r *http.Requ
 		ID      string
 		Class   string
 		Current bool
+		URL     string
 	}
 	type Data struct {
-		Title      string
-		User       string
-		Characters []Character
-		Categories []Category
+		Title            string
+		User             string
+		Characters       []Character
+		CurrentCharacter string
+		Categories       []Category
 	}
 	data := Data{
-		Title: h.Vendor.Name(),
-		User:  u.Name,
+		Title:            h.Vendor.Name(),
+		User:             u.Name,
+		CurrentCharacter: characterID,
 	}
 	for _, account := range accountResp.Response.DestinyAccounts {
 		for _, character := range account.Characters {
@@ -65,6 +81,7 @@ func (h VendorHandler) ServeHTTP(u *db.User, w http.ResponseWriter, r *http.Requ
 				ID:      character.CharacterID,
 				Class:   character.CharacterClass.ClassName,
 				Current: character.CharacterID == characterID,
+				URL:     makeURL(r.URL, "c", character.CharacterID).String(),
 			})
 		}
 	}
