@@ -3,6 +3,8 @@ package server
 import (
 	"html/template"
 
+	"github.com/zhirsch/oauth2"
+
 	"github.com/zhirsch/destinykioskstatus/api"
 	"github.com/zhirsch/destinykioskstatus/db"
 )
@@ -13,14 +15,10 @@ type Server struct {
 	DB       *db.DB
 }
 
-func NewServer(apiKey, templatePath, dbPath string) (*Server, error) {
+func NewServer(authConfig *oauth2.Config, templatePath, dbPath string) (*Server, error) {
 	s := &Server{}
 
-	api, err := api.NewClient(apiKey)
-	if err != nil {
-		panic(err)
-	}
-	s.API = api
+	s.API = &api.Client{authConfig}
 
 	t, err := template.ParseFiles(templatePath)
 	if err != nil {

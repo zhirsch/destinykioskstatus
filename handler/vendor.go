@@ -33,7 +33,7 @@ func makeURL(u *url.URL, args ...string) *url.URL {
 
 func (h VendorHandler) ServeHTTP(u *db.User, w http.ResponseWriter, r *http.Request) {
 	// Get the account info.
-	accountResp := h.Server.API.GetBungieAccount(u.AuthToken.Value, u.ID)
+	accountResp := h.Server.API.GetBungieAccount(u.Token, u.ID)
 
 	// Get the character to display info for.  If there isn't a character,
 	// redirect to the first character.
@@ -45,7 +45,7 @@ func (h VendorHandler) ServeHTTP(u *db.User, w http.ResponseWriter, r *http.Requ
 	}
 
 	// Get the vendor info.
-	vendorResp := h.Server.API.MyCharacterVendorData(u.AuthToken.Value, characterID, h.Vendor.Hash())
+	vendorResp := h.Server.API.MyCharacterVendorData(u.Token, characterID, h.Vendor.Hash())
 	failureStrings := vendorResp.Response.Definitions.VendorDetails[h.Vendor.Hash()].FailureStrings
 
 	type Item struct {

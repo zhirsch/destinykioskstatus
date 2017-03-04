@@ -1,79 +1,54 @@
 package api
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"time"
 
+	"golang.org/x/net/context"
+	"github.com/zhirsch/oauth2"
+
 	"github.com/cenkalti/backoff"
 )
 
 type Client struct {
-	apiKey string
+	AuthConfig *oauth2.Config
 }
 
-func NewClient(apiKey string) (*Client, error) {
-	return &Client{apiKey}, nil
-}
-
-func (c *Client) GetAccessTokensFromCode(code string) *GetAccessTokensFromCodeResponse {
-	req := &GetAccessTokensFromCodeRequest{code}
-	resp := new(GetAccessTokensFromCodeResponse)
-	c.post(req, resp)
-	return resp
-}
-
-func (c *Client) GetBungieNetUser(auth string) *GetBungieNetUserResponse {
+func (c *Client) GetBungieNetUser(tok *oauth2.Token) *GetBungieNetUserResponse {
 	req := new(GetBungieNetUserRequest)
 	resp := new(GetBungieNetUserResponse)
-	c.get(req, resp, auth)
+	c.get(tok, req, resp)
 	return resp
 }
 
-func (c *Client) GetBungieAccount(auth, membershipID string) *GetBungieAccountResponse {
+func (c *Client) GetBungieAccount(tok *oauth2.Token, membershipID string) *GetBungieAccountResponse {
 	req := &GetBungieAccountRequest{membershipID}
 	resp := new(GetBungieAccountResponse)
-	c.get(req, resp, auth)
+	c.get(tok, req, resp)
 	return resp
 }
 
-func (c *Client) MyCharacterVendorData(auth, characterHash, vendorHash string) *MyCharacterVendorDataResponse {
+func (c *Client) MyCharacterVendorData(tok *oauth2.Token, characterHash, vendorHash string) *MyCharacterVendorDataResponse {
 	req := &MyCharacterVendorDataRequest{characterHash, vendorHash}
 	resp := new(MyCharacterVendorDataResponse)
-	c.get(req, resp, auth)
+	c.get(tok, req, resp)
 	return resp
 }
 
-func (c *Client) get(req Request, resp Response, auth string) {
+func (c *Client) get(tok *oauth2.Token, req Request, resp Response) {
 	httpReq, err := http.NewRequest("GET", req.URL(), nil)
 	if err != nil {
 		panic(err)
 	}
-	httpReq.Header.Add("Authorization", fmt.Sprintf("Bearer %s", auth))
-	c.do(httpReq, resp)
-}
+	httpReq.Header.Add("X-API-Key", c.AuthConfig.ClientID)
 
-func (c *Client) post(req Request, resp Response) {
-	var body bytes.Buffer
-	if err := json.NewEncoder(&body).Encode(req); err != nil {
-		panic(err)
-	}
-	httpReq, err := http.NewRequest("POST", req.URL(), &body)
-	if err != nil {
-		panic(err)
-	}
-	httpReq.Header.Add("Content-Type", "application/json")
-	c.do(httpReq, resp)
-}
-
-func (c *Client) do(httpReq *http.Request, resp Response) {
-	httpReq.Header.Add("X-API-Key", c.apiKey)
-	err := backoff.RetryNotify(
+	client := c.AuthConfig.Client(context.TODO(), tok)
+	err = backoff.RetryNotify(
 		func() error {
-			httpResp, err := http.DefaultClient.Do(httpReq)
+			httpResp, err := client.Do(httpReq)
 			if err != nil {
 				return err
 			}

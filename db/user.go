@@ -2,13 +2,14 @@ package db
 
 import (
 	"fmt"
+
+	"github.com/zhirsch/oauth2"
 )
 
 type User struct {
-	ID           string
-	Name         string
-	AuthToken    Token
-	RefreshToken Token
+	ID    string
+	Name  string
+	Token *oauth2.Token
 }
 
 func (db *DB) SelectUser(id string) (*User, error) {
@@ -23,19 +24,18 @@ func (db *DB) SelectUser(id string) (*User, error) {
 	}
 
 	user := &User{}
+	token := &oauth2.Token{}
 	err = rows.Scan(
 		&user.ID,
 		&user.Name,
-		&user.AuthToken.Value,
-		&user.AuthToken.Ready,
-		&user.AuthToken.Expires,
-		&user.RefreshToken.Value,
-		&user.RefreshToken.Ready,
-		&user.RefreshToken.Expires,
+		&token.AccessToken,
+		&token.RefreshToken,
+		&token.Expiry,
 	)
 	if err != nil {
 		return nil, err
 	}
+	user.Token = token
 
 	if rows.Next() {
 		return nil, fmt.Errorf("too many rows for %v", id)
@@ -48,12 +48,9 @@ func (db *DB) InsertUser(user *User) error {
 	_, err := db.insertUserStmt.Exec(
 		user.ID,
 		user.Name,
-		user.AuthToken.Value,
-		user.AuthToken.Ready,
-		user.AuthToken.Expires,
-		user.RefreshToken.Value,
-		user.RefreshToken.Ready,
-		user.RefreshToken.Expires,
+		user.Token.AccessToken,
+		user.Token.RefreshToken,
+		user.Token.Expiry,
 	)
 	return err
 }

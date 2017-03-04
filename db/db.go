@@ -25,14 +25,11 @@ func NewDB(path string) (*DB, error) {
 
 	sql := `
 CREATE TABLE IF NOT EXISTS Users(
-    ID                  TEXT PRIMARY KEY,
-    Name                TEXT,
-    AuthTokenValue      TEXT,
-    AuthTokenReady      DATETIME,
-    AuthTokenExpires    DATETIME,
-    RefreshTokenValue   TEXT,
-    RefreshTokenReady   DATETIME,
-    RefreshTokenExpires DATETIME
+    ID                TEXT PRIMARY KEY,
+    Name              TEXT,
+    TokenAccessToken  TEXT,
+    TokenRefreshToken TEXT,
+    TokenExpiry       DATETIME
 );
 `
 	if _, err := db.db.Exec(sql); err != nil {
@@ -43,12 +40,9 @@ CREATE TABLE IF NOT EXISTS Users(
 SELECT
     ID,
     Name,
-    AuthTokenValue,
-    AuthTokenReady,
-    AuthTokenExpires,
-    RefreshTokenValue,
-    RefreshTokenReady,
-    RefreshTokenExpires
+    TokenAccessToken,
+    TokenRefreshToken,
+    TokenExpiry
 FROM
     Users
 WHERE
@@ -64,13 +58,10 @@ WHERE
 INSERT OR REPLACE INTO Users(
     ID,
     Name,
-    AuthTokenValue,
-    AuthTokenReady,
-    AuthTokenExpires,
-    RefreshTokenValue,
-    RefreshTokenReady,
-    RefreshTokenExpires
-) VALUES(?, ?, ?, ?, ?, ?, ?, ?);
+    TokenAccessToken,
+    TokenRefreshToken,
+    TokenExpiry
+) VALUES(?, ?, ?, ?, ?);
 `
 	if stmt, err := db.db.Prepare(sql); err != nil {
 		return nil, err

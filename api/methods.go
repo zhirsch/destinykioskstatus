@@ -67,40 +67,6 @@ func (r *GetBungieAccountResponse) GetHeader() *Header {
 	return &r.Header
 }
 
-// A GetAccessTokensFromCodeRequest is a request for the GetAccessTokensFromCode
-// method.
-type GetAccessTokensFromCodeRequest struct {
-	Code string `json:"code"`
-}
-
-// URL returns the endpoint for the GetAccessTokensFromCode method.
-func (GetAccessTokensFromCodeRequest) URL() string {
-	return "https://www.bungie.net/Platform/App/GetAccessTokensFromCode/"
-}
-
-// A GetAccessTokensFromCodeResponse is a response from the
-// GetAccessTokensFromCode method.
-type GetAccessTokensFromCodeResponse struct {
-	Header
-	Response struct {
-		AccessToken struct {
-			Value   string `json:"value"`
-			ReadyIn int    `json:"readyIn"`
-			Expires int    `json:"expires"`
-		} `json:"accessToken"`
-		RefreshToken struct {
-			Value   string `json:"value"`
-			ReadyIn int    `json:"readyIn"`
-			Expires int    `json:"expires"`
-		} `json:"refreshToken"`
-	}
-	Scope int `json:"scope"`
-}
-
-func (r *GetAccessTokensFromCodeResponse) GetHeader() *Header {
-	return &r.Header
-}
-
 type MyCharacterVendorDataRequest struct {
 	CharacterHash string
 	VendorHash    string

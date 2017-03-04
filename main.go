@@ -4,7 +4,9 @@ import (
 	"flag"
 	"log"
 	"net/http"
-	"net/url"
+
+	"github.com/zhirsch/oauth2"
+	"github.com/zhirsch/oauth2/bungie"
 
 	"github.com/zhirsch/destinykioskstatus/api"
 	"github.com/zhirsch/destinykioskstatus/handler"
@@ -33,18 +35,19 @@ func main() {
 		log.Fatal("need to provide --db")
 	}
 
-	s, err := server.NewServer(*apiKey, *templatePath, *dbPath)
-	if err != nil {
-		log.Fatal(err)
+	authConfig := &oauth2.Config{
+		ClientID:  *apiKey,
+		Endpoint:  bungie.Endpoint(*authURL),
+		Exchanger: bungie.Exchanger{},
 	}
 
-	authURL, err := url.ParseRequestURI(*authURL)
+	s, err := server.NewServer(authConfig, *templatePath, *dbPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	handlers := map[string]http.Handler{
-		"/BungieAuthCallback": handler.BungieAuthCallbackHandler{s},
+		"/BungieAuthCallback": handler.BungieAuthCallbackHandler{s, authConfig},
 	}
 	authedHandlers := map[string]handler.Handler{
 		"/emblems":  handler.VendorHandler{s, api.EmblemKioskVendor{}},
@@ -56,7 +59,7 @@ func main() {
 		"/armor":    handler.VendorHandler{s, api.ExoticArmorKioskVendor{}},
 	}
 	for p, h := range authedHandlers {
-		handlers[p] = handler.AuthenticationMiddlewareHandler{s, h, authURL}
+		handlers[p] = handler.AuthenticationMiddlewareHandler{s, authConfig, h}
 	}
 	for p, h := range handlers {
 		http.Handle(p, handler.StackTraceMiddlewareHandler{h})
