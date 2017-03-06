@@ -9,17 +9,8 @@
         float: left;
         margin: 0 0 10px 10px;
       }
-      .owned {
-        filter: grayscale(100%);
-      }
-      .item h2 {
-        color: lightgreen;
-        margin: 0 0 10px 10px;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        font-size: 8em;
-        transform: translate(-50%, -50%);
+      .missing {
+        opacity: 0.1;
       }
     </style>
     <script>
@@ -55,12 +46,7 @@
     {{range .Categories}}
     <h1>{{.Title}}</h1>
     {{range .Items}}
-    <div class="item">
-      <img src="{{.Icon}}" title="{{.Description}}" {{if .Owned}} class="owned" {{end}}/>
-      {{if .Owned}}
-      <h2 title="{{.Description}}">&check;</h2>
-      {{end}}
-    </div>
+    <img src="{{.Icon}}" title="{{.Description}}" class="item{{if .Missing}} missing{{end}}"/>
     {{end}}
     <br style="clear: both;" />
     {{end}}

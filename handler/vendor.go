@@ -51,7 +51,7 @@ func (h VendorHandler) ServeHTTP(u *db.User, w http.ResponseWriter, r *http.Requ
 	type Item struct {
 		Description string
 		Icon        string
-		Owned       bool
+		Missing     bool
 	}
 	type Category struct {
 		Title string
@@ -96,13 +96,13 @@ func (h VendorHandler) ServeHTTP(u *db.User, w http.ResponseWriter, r *http.Requ
 			}
 			if len(saleItem.FailureIndexes) == 0 {
 				item.Description = definition.ItemName
-				item.Owned = true
+				item.Missing = false
 			} else {
 				item.Description = fmt.Sprintf("%s\n\n%s",
 					definition.ItemName,
 					failureStrings[saleItem.FailureIndexes[0]],
 				)
-				item.Owned = false
+				item.Missing = true
 			}
 			category.Items = append(category.Items, item)
 		}
