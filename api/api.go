@@ -7,8 +7,9 @@ import (
 	"net/http"
 	"time"
 
-	"golang.org/x/net/context"
+	"github.com/zhirsch/destinykioskstatus/db"
 	"github.com/zhirsch/oauth2"
+	"golang.org/x/net/context"
 
 	"github.com/cenkalti/backoff"
 )
@@ -17,22 +18,15 @@ type Client struct {
 	AuthConfig *oauth2.Config
 }
 
-func (c *Client) GetBungieNetUser(tok *oauth2.Token) *GetBungieNetUserResponse {
-	req := new(GetBungieNetUserRequest)
-	resp := new(GetBungieNetUserResponse)
+func (c *Client) GetCurrentBungieAccount(tok *oauth2.Token) *GetCurrentBungieAccountResponse {
+	req := &GetCurrentBungieAccountRequest{}
+	resp := new(GetCurrentBungieAccountResponse)
 	c.get(tok, req, resp)
 	return resp
 }
 
-func (c *Client) GetBungieAccount(tok *oauth2.Token, membershipID string) *GetBungieAccountResponse {
-	req := &GetBungieAccountRequest{membershipID}
-	resp := new(GetBungieAccountResponse)
-	c.get(tok, req, resp)
-	return resp
-}
-
-func (c *Client) MyCharacterVendorData(tok *oauth2.Token, characterHash, vendorHash string) *MyCharacterVendorDataResponse {
-	req := &MyCharacterVendorDataRequest{characterHash, vendorHash}
+func (c *Client) MyCharacterVendorData(tok *oauth2.Token, membershipType db.DestinyMembershipType, characterID db.DestinyCharacterID, vendorHash string) *MyCharacterVendorDataResponse {
+	req := &MyCharacterVendorDataRequest{int64(membershipType), string(characterID), vendorHash}
 	resp := new(MyCharacterVendorDataResponse)
 	c.get(tok, req, resp)
 	return resp
@@ -59,7 +53,7 @@ func (c *Client) get(tok *oauth2.Token, req Request, resp Response) {
 				return err
 			}
 			if resp.GetHeader().ErrorCode != 1 {
-				return fmt.Errorf("bad message: %+v", resp)
+				return fmt.Errorf("bad message for %v: %+v", req.URL(), resp)
 			}
 			return nil
 		},

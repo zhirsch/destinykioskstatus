@@ -21,59 +21,47 @@ type Header struct {
 	ThrottleSeconds int         `json:"ThrottleSeconds"`
 }
 
-type GetBungieNetUserRequest struct{}
+type GetCurrentBungieAccountRequest struct{}
 
-func (*GetBungieNetUserRequest) URL() string {
-	return "https://www.bungie.net/Platform/User/GetBungieNetUser/"
+func (*GetCurrentBungieAccountRequest) URL() string {
+	return "https://www.bungie.net/Platform/User/GetCurrentBungieAccount/"
 }
 
-type GetBungieNetUserResponse struct {
+type GetCurrentBungieAccountResponse struct {
 	Header
 	Response struct {
-		User struct {
-			MembershipID string `json:"membershipId"`
+		BungieNetUser struct {
 			DisplayName  string `json:"displayName"`
-		} `json:"user"`
-	} `json:"Response"`
-}
-
-func (r *GetBungieNetUserResponse) GetHeader() *Header {
-	return &r.Header
-}
-
-type GetBungieAccountRequest struct {
-	MembershipID string
-}
-
-func (r *GetBungieAccountRequest) URL() string {
-	return fmt.Sprintf("https://www.bungie.net/Platform/User/GetBungieAccount/%s/2/", r.MembershipID)
-}
-
-type GetBungieAccountResponse struct {
-	Header
-	Response struct {
+			MembershipID string `json:"membershipId"`
+		} `json:"bungieNetUser"`
 		DestinyAccounts []struct {
 			Characters []struct {
-				CharacterID    string `json:"characterId"`
 				CharacterClass struct {
 					ClassName string `json:"className"`
 				} `json:"characterClass"`
+				CharacterID string `json:"characterId"`
 			} `json:"characters"`
+			UserInfo struct {
+				DisplayName    string `json:"displayName"`
+				MembershipID   string `json:"membershipId"`
+				MembershipType int    `json:"membershipType"`
+			} `json:"userInfo"`
 		} `json:"destinyAccounts"`
 	} `json:"Response"`
 }
 
-func (r *GetBungieAccountResponse) GetHeader() *Header {
+func (r *GetCurrentBungieAccountResponse) GetHeader() *Header {
 	return &r.Header
 }
 
 type MyCharacterVendorDataRequest struct {
-	CharacterHash string
-	VendorHash    string
+	MembershipType int64
+	CharacterHash  string
+	VendorHash     string
 }
 
 func (r *MyCharacterVendorDataRequest) URL() string {
-	return fmt.Sprintf("https://www.bungie.net/Platform/Destiny/2/MyAccount/Character/%v/Vendor/%v/?definitions=true", r.CharacterHash, r.VendorHash)
+	return fmt.Sprintf("https://www.bungie.net/Platform/Destiny/%v/MyAccount/Character/%v/Vendor/%v/?definitions=true", r.MembershipType, r.CharacterHash, r.VendorHash)
 }
 
 type MyCharacterVendorDataResponse struct {

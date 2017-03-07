@@ -15,37 +15,27 @@ type VendorHandler struct {
 	Vendor api.Vendor
 }
 
-func makeURL(u *url.URL, args ...string) *url.URL {
-	if len(args)%2 != 0 {
-		panic(fmt.Errorf("len(args) must be a multiple of two"))
-	}
-
-	var v url.URL = *u
-
-	q := v.Query()
-	for i := 0; i < len(args); i += 2 {
-		q.Set(args[i], args[i+1])
-	}
-	v.RawQuery = q.Encode()
-
-	return &v
+func characterURL(u url.URL, destinyCharacter *db.DestinyCharacter) string {
+	q := u.Query()
+	q.Set("c", string(destinyCharacter.CharacterID))
+	u.RawQuery = q.Encode()
+	return u.String()
 }
 
-func (h VendorHandler) ServeHTTP(u *db.User, w http.ResponseWriter, r *http.Request) {
-	// Get the account info.
-	accountResp := h.Server.API.GetBungieAccount(u.Token, u.ID)
+func (h VendorHandler) ServeHTTP(bungieUser *db.BungieUser, w http.ResponseWriter, r *http.Request) {
+	// TODO: Support multiple DestinyUsers on the same BungieUser.
+	destinyUser := bungieUser.DestinyUsers[0]
 
 	// Get the character to display info for.  If there isn't a character,
 	// redirect to the first character.
-	characterID := r.URL.Query().Get("c")
+	characterID := db.DestinyCharacterID(r.URL.Query().Get("c"))
 	if characterID == "" {
-		u := makeURL(r.URL, "c", accountResp.Response.DestinyAccounts[0].Characters[0].CharacterID)
-		http.Redirect(w, r, u.String(), http.StatusFound)
+		http.Redirect(w, r, characterURL(*r.URL, destinyUser.DestinyCharacters[0]), http.StatusFound)
 		return
 	}
 
 	// Get the vendor info.
-	vendorResp := h.Server.API.MyCharacterVendorData(u.Token, characterID, h.Vendor.Hash())
+	vendorResp := h.Server.API.MyCharacterVendorData(bungieUser.Token, destinyUser.MembershipType, characterID, h.Vendor.Hash())
 	failureStrings := vendorResp.Response.Definitions.VendorDetails[h.Vendor.Hash()].FailureStrings
 
 	type Item struct {
@@ -72,18 +62,16 @@ func (h VendorHandler) ServeHTTP(u *db.User, w http.ResponseWriter, r *http.Requ
 	}
 	data := Data{
 		Title:            h.Vendor.Name(),
-		User:             u.Name,
-		CurrentCharacter: characterID,
+		User:             destinyUser.DisplayName,
+		CurrentCharacter: string(characterID),
 	}
-	for _, account := range accountResp.Response.DestinyAccounts {
-		for _, character := range account.Characters {
-			data.Characters = append(data.Characters, Character{
-				ID:      character.CharacterID,
-				Class:   character.CharacterClass.ClassName,
-				Current: character.CharacterID == characterID,
-				URL:     makeURL(r.URL, "c", character.CharacterID).String(),
-			})
-		}
+	for _, character := range destinyUser.DestinyCharacters {
+		data.Characters = append(data.Characters, Character{
+			ID:      string(character.CharacterID),
+			Class:   character.ClassName,
+			Current: character.CharacterID == characterID,
+			URL:     characterURL(*r.URL, character),
+		})
 	}
 	for _, saleItemCategory := range vendorResp.Response.Data.SaleItemCategories {
 		category := Category{Title: saleItemCategory.CategoryTitle}

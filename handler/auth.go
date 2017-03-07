@@ -5,14 +5,16 @@ import (
 	"log"
 	"net/http"
 
-	"golang.org/x/net/context"
 	"github.com/zhirsch/oauth2"
+	"golang.org/x/net/context"
 
 	"github.com/zhirsch/destinykioskstatus/db"
 	"github.com/zhirsch/destinykioskstatus/server"
 )
 
-const userCookieName = "X-DestinyKioskStatus-User"
+const (
+	cookieBungieMembershipID = "X-DestinyKioskStatus-BungieMembershipID"
+)
 
 var errNeedAuth = errors.New("ErrNeedAuth")
 
@@ -23,23 +25,24 @@ type AuthenticationMiddlewareHandler struct {
 }
 
 func (h AuthenticationMiddlewareHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	u, err := h.getUser(w, r)
+	bungieUser, err := h.getBungieUser(w, r)
 	if err != nil {
+		log.Printf("%v", err)
 		u := *r.URL
 		u.Scheme = "https"
 		u.Host = r.Host
 		http.Redirect(w, r, h.AuthConfig.AuthCodeURL(u.String()), http.StatusSeeOther)
 		return
 	}
-	h.Handler.ServeHTTP(u, w, r)
+	h.Handler.ServeHTTP(bungieUser, w, r)
 }
 
-func (h AuthenticationMiddlewareHandler) getUser(w http.ResponseWriter, r *http.Request) (*db.User, error) {
-	cookie, err := r.Cookie(userCookieName)
+func (h AuthenticationMiddlewareHandler) getBungieUser(w http.ResponseWriter, r *http.Request) (*db.BungieUser, error) {
+	cookie, err := r.Cookie(cookieBungieMembershipID)
 	if err != nil {
 		return nil, err
 	}
-	return h.Server.DB.SelectUser(cookie.Value)
+	return h.Server.DB.SelectBungieUser(db.BungieMembershipID(cookie.Value))
 }
 
 type BungieAuthCallbackHandler struct {
@@ -55,20 +58,42 @@ func (h BungieAuthCallbackHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		panic(err)
 	}
 
-	// Get the user info.
-	userResp := h.Server.API.GetBungieNetUser(token)
+	// Get the account info.
+	bungieAccountResp := h.Server.API.GetCurrentBungieAccount(token)
+
+	bungieUser := &db.BungieUser{
+		MembershipID: db.BungieMembershipID(bungieAccountResp.Response.BungieNetUser.MembershipID),
+		DisplayName:  bungieAccountResp.Response.BungieNetUser.DisplayName,
+		Token:        token,
+	}
+	for _, destinyAccountResp := range bungieAccountResp.Response.DestinyAccounts {
+		destinyUser := &db.DestinyUser{
+			MembershipType: db.DestinyMembershipType(destinyAccountResp.UserInfo.MembershipType),
+			MembershipID:   db.DestinyMembershipID(destinyAccountResp.UserInfo.MembershipID),
+			DisplayName:    destinyAccountResp.UserInfo.DisplayName,
+		}
+		for _, destinyCharacterResp := range destinyAccountResp.Characters {
+			destinyCharacter := &db.DestinyCharacter{
+				CharacterID: db.DestinyCharacterID(destinyCharacterResp.CharacterID),
+				ClassName:   destinyCharacterResp.CharacterClass.ClassName,
+			}
+			destinyUser.DestinyCharacters = append(destinyUser.DestinyCharacters, destinyCharacter)
+		}
+		bungieUser.DestinyUsers = append(bungieUser.DestinyUsers, destinyUser)
+	}
 
 	// Create and insert the user into the database.
-	user := &db.User{
-		ID:    userResp.Response.User.MembershipID,
-		Name:  userResp.Response.User.DisplayName,
-		Token: token,
-	}
-	if err := h.Server.DB.InsertUser(user); err != nil {
-		log.Printf("unable to write user to db: %v", err)
+	if err := h.Server.DB.InsertBungieUser(bungieUser); err != nil {
+		log.Printf("unable to write BungieUser to db: %v", err)
 	}
 
-	// Set the cookie and redirecto to the original URL.
-	http.SetCookie(w, &http.Cookie{Name: "X-DestinyKioskStatus-User", Value: user.ID})
+	// Set the cookie.
+	cookie := &http.Cookie{
+		Name:  cookieBungieMembershipID,
+		Value: string(bungieUser.MembershipID),
+	}
+	http.SetCookie(w, cookie)
+
+	// Redirect to the original URL.
 	http.Redirect(w, r, q["state"][0], http.StatusSeeOther)
 }

@@ -7,5 +7,5 @@ import (
 )
 
 type Handler interface {
-	ServeHTTP(*db.User, http.ResponseWriter, *http.Request)
+	ServeHTTP(*db.BungieUser, http.ResponseWriter, *http.Request)
 }
