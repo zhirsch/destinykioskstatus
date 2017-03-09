@@ -14,13 +14,14 @@ import (
 )
 
 var (
-	addr         = flag.String("addr", ":443", "The address to listen on.")
-	apiKey       = flag.String("apikey", "", "The Bungie API key.")
-	authURL      = flag.String("authurl", "", "The Bungie auth URL.")
-	dbPath       = flag.String("db", "", "The path to the sqlite database.")
-	templatePath = flag.String("template", "kiosk.html", "The path to the HTML template file.")
-	tlsCertPath  = flag.String("tlscert", "server.crt", "The path to the  TLS certificate file.")
-	tlsKeyPath   = flag.String("tlskey", "server.key", "The path to the TLS key file.")
+	addr           = flag.String("addr", ":443", "The address to listen on.")
+	apiKey         = flag.String("apikey", "", "The Bungie API key.")
+	authURL        = flag.String("authurl", "", "The Bungie auth URL.")
+	manifestDBPath = flag.String("manifestdb", "", "The path to the manifest sqlite database.")
+	userDBPath     = flag.String("userdb", "", "The path to the user sqlite database.")
+	templatePath   = flag.String("template", "kiosk.html", "The path to the HTML template file.")
+	tlsCertPath    = flag.String("tlscert", "server.crt", "The path to the  TLS certificate file.")
+	tlsKeyPath     = flag.String("tlskey", "server.key", "The path to the TLS key file.")
 )
 
 func main() {
@@ -31,8 +32,14 @@ func main() {
 	if *authURL == "" {
 		log.Fatal("need to provide --authurl")
 	}
-	if *dbPath == "" {
-		log.Fatal("need to provide --db")
+	if *manifestDBPath == "" {
+		log.Fatal("need to provide --manifestdb")
+	}
+	if *userDBPath == "" {
+		log.Fatal("need to provide --userdb")
+	}
+	if *templatePath == "" {
+		log.Fatal("need to provide --template")
 	}
 
 	authConfig := &oauth2.Config{
@@ -41,7 +48,7 @@ func main() {
 		Exchanger: bungie.Exchanger{},
 	}
 
-	s, err := server.NewServer(authConfig, *templatePath, *dbPath)
+	s, err := server.NewServer(authConfig, *manifestDBPath, *userDBPath, *templatePath)
 	if err != nil {
 		log.Fatal(err)
 	}

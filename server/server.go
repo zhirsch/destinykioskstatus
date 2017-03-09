@@ -11,26 +11,33 @@ import (
 
 type Server struct {
 	API      *api.Client
+	Manifest *api.Manifest
 	Template *template.Template
 	DB       *db.DB
 }
 
-func NewServer(authConfig *oauth2.Config, templatePath, dbPath string) (*Server, error) {
-	s := &Server{}
-
-	s.API = &api.Client{authConfig}
-
-	t, err := template.ParseFiles(templatePath)
-	if err != nil {
-		panic(err)
+func NewServer(authConfig *oauth2.Config, manifestDBPath, userDBPath, templatePath string) (*Server, error) {
+	s := &Server{
+		API: &api.Client{authConfig},
 	}
-	s.Template = t
 
-	db, err := db.NewDB(dbPath)
-	if err != nil {
+	if m, err := api.NewManifest(manifestDBPath); err != nil {
 		panic(err)
+	} else {
+		s.Manifest = m
 	}
-	s.DB = db
+
+	if db, err := db.NewDB(userDBPath); err != nil {
+		panic(err)
+	} else {
+		s.DB = db
+	}
+
+	if t, err := template.ParseFiles(templatePath); err != nil {
+		panic(err)
+	} else {
+		s.Template = t
+	}
 
 	return s, nil
 }

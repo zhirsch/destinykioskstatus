@@ -57,39 +57,33 @@ func (r *GetCurrentBungieAccountResponse) GetHeader() *Header {
 type MyCharacterVendorDataRequest struct {
 	MembershipType int64
 	CharacterHash  string
-	VendorHash     string
+	VendorHash     uint32
 }
 
 func (r *MyCharacterVendorDataRequest) URL() string {
-	return fmt.Sprintf("https://www.bungie.net/Platform/Destiny/%v/MyAccount/Character/%v/Vendor/%v/?definitions=true", r.MembershipType, r.CharacterHash, r.VendorHash)
+	return fmt.Sprintf("https://www.bungie.net/Platform/Destiny/%v/MyAccount/Character/%v/Vendor/%v/", r.MembershipType, r.CharacterHash, r.VendorHash)
 }
 
 type MyCharacterVendorDataResponse struct {
 	Header
 	Response struct {
 		Data struct {
-			VendorHash         int `json:"vendorHash"`
+			VendorHash         uint32 `json:"vendorHash"`
+			NextRefreshDate    string `json:"nextRefreshDate"`
 			SaleItemCategories []struct {
 				CategoryTitle string `json:"categoryTitle"`
 				SaleItems     []struct {
 					FailureIndexes []int `json:"failureIndexes"`
 					Item           struct {
-						ItemHash int `json:"itemHash"`
+						ItemHash uint32 `json:"itemHash"`
 					} `json:"item"`
+					UnlockStatuses []struct {
+						IsSet          bool   `json:"isSet"`
+						UnlockFlagHash uint32 `json:"unlockFlagHash"`
+					} `json:"unlockStatuses"`
 				} `json:"saleItems"`
 			} `json:"saleItemCategories"`
 		} `json:"data"`
-		Definitions struct {
-			Items map[string]struct {
-				ItemHash      int    `json:"itemHash"`
-				ItemName      string `json:"itemName"`
-				Icon          string `json:"icon"`
-				SecondaryIcon string `json:"secondaryIcon"`
-			} `json:"items"`
-			VendorDetails map[string]struct {
-				FailureStrings []string `json:"failureStrings"`
-			} `json:"vendorDetails"`
-		} `json:"definitions"`
 	} `json:"Response"`
 }
 

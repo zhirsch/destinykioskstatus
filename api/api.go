@@ -25,7 +25,7 @@ func (c *Client) GetCurrentBungieAccount(tok *oauth2.Token) *GetCurrentBungieAcc
 	return resp
 }
 
-func (c *Client) MyCharacterVendorData(tok *oauth2.Token, membershipType db.DestinyMembershipType, characterID db.DestinyCharacterID, vendorHash string) *MyCharacterVendorDataResponse {
+func (c *Client) MyCharacterVendorData(tok *oauth2.Token, membershipType db.DestinyMembershipType, characterID db.DestinyCharacterID, vendorHash uint32) *MyCharacterVendorDataResponse {
 	req := &MyCharacterVendorDataRequest{int64(membershipType), string(characterID), vendorHash}
 	resp := new(MyCharacterVendorDataResponse)
 	c.get(tok, req, resp)

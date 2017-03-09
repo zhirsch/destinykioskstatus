@@ -8,9 +8,21 @@
         position: relative;
         float: left;
         margin: 0 0 10px 10px;
+        width: 96px;
+        height: 96px;
       }
-      .missing {
+      .item > img, .item > span {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+      .item > .missing {
         opacity: 0.1;
+      }
+      .item > .dollar {
+        background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH4QMHAg86iasx/QAAABl0RVh0Q29tbWVudABDcmVhdGVkIHdpdGggR0lNUFeBDhcAAAQcSURBVHja7Z1NbBRlGMd/00ILpilFKDFQIypKIl8K0UREPCkHNIbExESjXvSgkGi8yLGJcPViJOHqyZhwwYCJJKYESQjWQowotZHyoQ10wWwpuNvZeZ/hILW2zkx36+zsbvf/m9vMtpn3+b1fz/u+24IQQgghhBBCCCGEEEI0A15Dv31IOKM0DVeeFtVBCZAAIQESICRAAhqecZbxZWOVqTHmzX/SSSfbaeE54BFgNbAajyUxucEYkAOGgQuEXCDkR4qcoYNRtbty6KOVgFcw+jACwpQu43eML3C8TZEHFegoAnZhXEwt6EmX+BfX6cD4PJPAS8AMRliM0Zdp8OtAQP0MwsZhPF6KfR5SBI4QcgyjnzEGWcb4tM/k6KCTblrpxmMlHhvw2AhswuPRmAh4qv2OVxMGzQmMjxlneeSMp9zaXKAHxzsYhzD+Uhc0yTkWYlyKCf5VfB5PaBVz607ydOHYjTEgAQEvxATfTwz+/xGgTHjaG8T1+wdp46xqaPUH39ORLaDE07P+rFpAKtwXefc2vzRD/asHAStiFtaKEpANE5F3u1klAdlwLfLuQnZogMxmED4aMw0d5ir3zPdBuB6y4D0JWfBRRlgsAdWkQA+GnyDhVwJepDdizUYCUuuGPiljI2UIYx8ltnKRdglIkzxdGL9VsKvlY5z9z/1+FjRa0etnKbbIQ7RxAo+Vc/4dIT4wCJwh5DSO47Txk2p4JRKMgVQ3XIwRjAOUeFYBLod+FuD4ECOX+u6XcQ7HG412dKU2XKcDx7sYP1RBxAA+mxXk8hcr1uB4H+MrjBspSZjA8ZqCWym9eBR5mIBdKUgIcLyuWdDcZz3T5/4BT9HCFjyeBHbglbGgF+JTYhPtnFftnouApETMZzPGQYzbs7SEbxXMagiYWu64H+NwooQSWxTQagmYHDuMAwmtYL8CWk0BkzlGXKJnnFRAqy0AwPFm7P6DyEBAgZ4YAYVaFKH5UvJr5OrpdZpPwIqIM6Z/c0MCsqCdZ2KeDEpAFssYHrtjnn7XnAOpcZyA5zMZhB0fxeYBPuuaeyZjnCLg5Yq2FcsVMEQbxv6EJOwbTSWngjGK8RkltkWehKhEwBUW4XgL43zisrTPBgmIDk4O4whGLwE7mWANYyz9R8zMz4+znBLb7n754hBGftYlacd7SqYqX8d3qWzMOPYqmw1rcBl/ELBTwQfwWY+xD2Mog8DfwviUPF0KfLSMJ3DsxfgaYyyloAcY3+P4gHzE35aoMfW7JdlHK1vZSCuP4bEWWAs8ACwFuoAleHePKE51Z5eBy8AlYBjjFDc5wb3cVO1Omyss0nfEaombH4dxG1dASQJEUwvw1QJqS0ECasstCRBNLWBULaC2/Dw/BOj/BwghhBBCCCGEEEIIIYQQQoj5zR12ehheyIz3cAAAAABJRU5ErkJggg==);
       }
     </style>
     <script>
@@ -46,7 +58,10 @@
     {{range .Categories}}
     <h1>{{.Title}}</h1>
     {{range .Items}}
-    <img src="{{.Icon}}" title="{{.Description}}" class="item{{if .Missing}} missing{{end}}"/>
+    <div class="item" title="{{.Description}}">
+      <img src="{{.Icon}}" {{if .Missing}}class="missing"{{end}} />
+      {{if .ForSale}}<span class="dollar"/>{{end}}
+    </div>
     {{end}}
     <br style="clear: both;" />
     {{end}}
