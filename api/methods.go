@@ -90,3 +90,29 @@ type MyCharacterVendorDataResponse struct {
 func (r *MyCharacterVendorDataResponse) GetHeader() *Header {
 	return &r.Header
 }
+
+type GetAllVendorsForCurrentCharacterRequest struct {
+	MembershipType int64
+	CharacterHash  string
+}
+
+func (r *GetAllVendorsForCurrentCharacterRequest) URL() string {
+	return fmt.Sprintf("https://www.bungie.net/Platform/Destiny/%v/MyAccount/Character/%v/Vendors/Summaries/", r.MembershipType, r.CharacterHash)
+}
+
+type GetAllVendorsForCurrentCharacterResponse struct {
+	Header
+	Response struct {
+		Data struct {
+			Vendors []struct {
+				VendorHash      uint32 `json:"vendorHash"`
+				NextRefreshDate string `json:"nextRefreshDate"`
+				Enabled         bool   `json:"enabled"`
+			} `json:"vendors"`
+		} `json:"data"`
+	} `json:"Response"`
+}
+
+func (r *GetAllVendorsForCurrentCharacterResponse) GetHeader() *Header {
+	return &r.Header
+}

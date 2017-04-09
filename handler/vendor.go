@@ -15,9 +15,23 @@ import (
 	"github.com/zhirsch/oauth2"
 )
 
+var vendorIdentifierBlacklist = map[string]bool{
+	"VENDOR_BOUNTY_TRACKER":      true,
+	"VENDOR_KIOSK_EMBLEMS":       true,
+	"VENDOR_KIOSK_EMOTES":        true,
+	"VENDOR_KIOSK_EXOTIC_ARMOR":  true,
+	"VENDOR_KIOSK_EXOTIC_WEAPON": true,
+	"VENDOR_KIOSK_HOLIDAY":       true,
+	"VENDOR_KIOSK_SHADERS":       true,
+	"VENDOR_KIOSK_SHIPS":         true,
+	"VENDOR_KIOSK_VEHICLES":      true,
+	"VENDOR_POSTMASTER":          true,
+	"VENDOR_REEF_POSTMASTER":     true,
+}
+
 type VendorHandler struct {
-	Server *server.Server
-	Vendor api.Vendor
+	Server     *server.Server
+	VendorHash uint32
 }
 
 func (h VendorHandler) ServeHTTP(bungieUser *db.BungieUser, w http.ResponseWriter, r *http.Request) {
@@ -33,15 +47,11 @@ func (h VendorHandler) ServeHTTP(bungieUser *db.BungieUser, w http.ResponseWrite
 	}
 
 	// Get the vendor info.
-	vendorResp := h.Server.API.MyCharacterVendorData(bungieUser.Token, destinyUser.MembershipType, characterID, h.Vendor.Hash())
-	vendorDefinition := h.Server.Manifest.GetDestinyVendorDefinition(h.Vendor)
+	vendorResp := h.Server.API.MyCharacterVendorData(bungieUser.Token, destinyUser.MembershipType, characterID, h.VendorHash)
+	vendorDefinition := h.Server.Manifest.GetDestinyVendorDefinition(h.VendorHash)
 
-	sources := &sources{
-		client:         h.Server.API,
-		token:          bungieUser.Token,
-		membershipType: destinyUser.MembershipType,
-		characterID:    characterID,
-	}
+	// Get the items that are for sale for this user.
+	itemsForSale := h.getItemsForSale(bungieUser.Token, destinyUser.MembershipType, characterID)
 
 	type Item struct {
 		Description string
@@ -67,7 +77,7 @@ func (h VendorHandler) ServeHTTP(bungieUser *db.BungieUser, w http.ResponseWrite
 		Categories       []Category
 	}
 	data := Data{
-		Title:            h.Vendor.Name(),
+		Title:            vendorDefinition.Summary.VendorName,
 		User:             destinyUser.DisplayName,
 		CurrentCharacter: string(characterID),
 	}
@@ -91,9 +101,8 @@ func (h VendorHandler) ServeHTTP(bungieUser *db.BungieUser, w http.ResponseWrite
 				item.Missing = item.Missing || !unlockStatus.IsSet
 			}
 			if item.Missing {
-				for _, sourceHash := range itemDefinition.SourceHashes {
-					item.ForSale = item.ForSale || sources.isForSale(saleItem.Item.ItemHash, sourceHash)
-				}
+				_, itemForSale := itemsForSale[saleItem.Item.ItemHash]
+				item.ForSale = item.ForSale || itemForSale
 			}
 			category.Items = append(category.Items, item)
 		}
@@ -103,6 +112,28 @@ func (h VendorHandler) ServeHTTP(bungieUser *db.BungieUser, w http.ResponseWrite
 	if err := h.Server.Template.Execute(w, data); err != nil {
 		panic(err)
 	}
+}
+
+func (h VendorHandler) getItemsForSale(token *oauth2.Token, membershipType db.DestinyMembershipType, characterID db.DestinyCharacterID) map[uint32]bool {
+	allVendorsResp := h.Server.API.GetAllVendorsForCurrentCharacter(token, membershipType, characterID)
+
+	forSale := make(map[uint32]bool)
+	for _, vendor := range allVendorsResp.Response.Data.Vendors {
+		if !vendor.Enabled {
+			continue
+		}
+		vendorDefinition := h.Server.Manifest.GetDestinyVendorDefinition(vendor.VendorHash)
+		if _, ok := vendorIdentifierBlacklist[vendorDefinition.Summary.VendorIdentifier]; ok {
+			continue
+		}
+		vendorResp := vendorCache.get(h.Server.API, h.Server.Manifest, token, membershipType, characterID, vendorDefinition)
+		for _, saleItemCategory := range vendorResp.Response.Data.SaleItemCategories {
+			for _, saleItem := range saleItemCategory.SaleItems {
+				forSale[saleItem.Item.ItemHash] = true
+			}
+		}
+	}
+	return forSale
 }
 
 func characterURL(u url.URL, destinyCharacter *db.DestinyCharacter) string {
@@ -123,54 +154,32 @@ func getItemDescription(itemName string, failureIndexes []int, failureStrings []
 	return itemName + "\n\n" + strings.Join(description, "\n")
 }
 
-var (
-	sellingVendors = []api.Vendor{
-		api.BountyTrackerVendor{},
-		api.Cayde6Vendor{},
-		api.CrucibleVendor{},
-		api.CryptarchVendor{},
-		api.DeadOrbitVendor{},
-		api.ErisMornVendor{},
-		api.EvaLevanteVendor{},
-		api.EververseVendor{},
-		api.FutureWarCultVendor{},
-		api.GunsmithVendor{},
-		api.IkoraReyVendor{},
-		api.NewMonarchyVendor{},
-		api.ShaxxVendor{},
-		api.ShipwrightVendor{},
-		api.TheSpeakerVendor{},
-		api.VanguardVendor{},
-		api.ZavalaVendor{},
-	}
-)
-
 type cache struct {
 	// Assumes that the vendors are selling the same thing for all users.
 	entries map[uint32]*api.MyCharacterVendorDataResponse
 	sync.RWMutex
 }
 
-func (c *cache) get(client *api.Client, token *oauth2.Token, membershipType db.DestinyMembershipType, characterID db.DestinyCharacterID, vendor api.Vendor) *api.MyCharacterVendorDataResponse {
+func (c *cache) get(client *api.Client, manifest *api.Manifest, token *oauth2.Token, membershipType db.DestinyMembershipType, characterID db.DestinyCharacterID, vendorDefinition *api.DestinyVendorDefinition) *api.MyCharacterVendorDataResponse {
 	c.RLock()
-	vendorResp, ok := c.entries[vendor.Hash()]
+	vendorResp, ok := c.entries[vendorDefinition.Hash]
 	if !ok || c.isExpired(vendorResp) {
 		c.RUnlock()
 		c.Lock()
 		defer c.Unlock()
-		vendorResp, ok = c.entries[vendor.Hash()]
+		vendorResp, ok = c.entries[vendorDefinition.Hash]
 		if !ok || c.isExpired(vendorResp) {
-			log.Printf("getting vendor %v", vendor.Name())
-			vendorResp = client.MyCharacterVendorData(token, membershipType, characterID, vendor.Hash())
+			log.Printf("getting vendor %v (%v)", vendorDefinition.Summary.VendorName, vendorDefinition.Summary.VendorIdentifier)
+			vendorResp = client.MyCharacterVendorData(token, membershipType, characterID, vendorDefinition.Hash)
 			if c.entries == nil {
 				c.entries = make(map[uint32]*api.MyCharacterVendorDataResponse)
 			}
-			c.entries[vendor.Hash()] = vendorResp
+			c.entries[vendorDefinition.Hash] = vendorResp
 			t, err := time.Parse("2006-01-02T15:04:05Z", vendorResp.Response.Data.NextRefreshDate)
 			if err != nil {
 				panic(err)
 			}
-			log.Printf("vendor %v expires at %v", vendor.Name(), t)
+			log.Printf("vendor %v expires at %v", vendorDefinition.Summary.VendorName, t)
 		}
 	} else {
 		defer c.RUnlock()
@@ -187,23 +196,3 @@ func (c *cache) isExpired(vendorResp *api.MyCharacterVendorDataResponse) bool {
 }
 
 var vendorCache cache
-
-type sources struct {
-	client         *api.Client
-	token          *oauth2.Token
-	membershipType db.DestinyMembershipType
-	characterID    db.DestinyCharacterID
-}
-
-func (s *sources) isForSale(itemHash, sourceHash uint32) bool {
-	forSale := make(map[uint32]bool)
-	for _, vendor := range sellingVendors {
-		vendorResp := vendorCache.get(s.client, s.token, s.membershipType, s.characterID, vendor)
-		for _, saleItemCategory := range vendorResp.Response.Data.SaleItemCategories {
-			for _, saleItem := range saleItemCategory.SaleItems {
-				forSale[saleItem.Item.ItemHash] = true
-			}
-		}
-	}
-	return forSale[itemHash]
-}
