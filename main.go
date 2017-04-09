@@ -8,7 +8,6 @@ import (
 	"github.com/zhirsch/oauth2"
 	"github.com/zhirsch/oauth2/bungie"
 
-	"github.com/zhirsch/destinykioskstatus/api"
 	"github.com/zhirsch/destinykioskstatus/handler"
 	"github.com/zhirsch/destinykioskstatus/server"
 )
@@ -57,13 +56,13 @@ func main() {
 		"/BungieAuthCallback": handler.BungieAuthCallbackHandler{s, authConfig},
 	}
 	authedHandlers := map[string]handler.Handler{
-		"/emblems":  handler.VendorHandler{s, api.EmblemKioskVendor{}},
-		"/shaders":  handler.VendorHandler{s, api.ShaderKioskVendor{}},
-		"/ships":    handler.VendorHandler{s, api.ShipKioskVendor{}},
-		"/sparrows": handler.VendorHandler{s, api.SparrowKioskVendor{}},
-		"/emotes":   handler.VendorHandler{s, api.EmoteKioskVendor{}},
-		"/weapons":  handler.VendorHandler{s, api.ExoticWeaponKioskVendor{}},
-		"/armor":    handler.VendorHandler{s, api.ExoticArmorKioskVendor{}},
+		"/emblems":  handler.VendorHandler{s, 3301500998},
+		"/shaders":  handler.VendorHandler{s, 2420628997},
+		"/ships":    handler.VendorHandler{s, 2244880194},
+		"/sparrows": handler.VendorHandler{s, 44395194},
+		"/emotes":   handler.VendorHandler{s, 614738178},
+		"/weapons":  handler.VendorHandler{s, 1460182514},
+		"/armor":    handler.VendorHandler{s, 3902439767},
 	}
 	for p, h := range authedHandlers {
 		handlers[p] = handler.AuthenticationMiddlewareHandler{s, authConfig, h}

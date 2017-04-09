@@ -58,11 +58,16 @@ func (m *Manifest) get(table string, hash uint32, definition interface{}) {
 
 type DestinyVendorDefinition struct {
 	FailureStrings []string `json:"failureStrings"`
+	Summary        struct {
+		VendorIdentifier string `json:"vendorIdentifier"`
+		VendorName       string `json:"vendorName"`
+	} `json:"summary"`
+	Hash uint32 `json:"hash"`
 }
 
-func (m *Manifest) GetDestinyVendorDefinition(v Vendor) *DestinyVendorDefinition {
+func (m *Manifest) GetDestinyVendorDefinition(vendorHash uint32) *DestinyVendorDefinition {
 	definition := new(DestinyVendorDefinition)
-	m.get("DestinyVendorDefinition", v.Hash(), definition)
+	m.get("DestinyVendorDefinition", vendorHash, definition)
 	return definition
 }
 

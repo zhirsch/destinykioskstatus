@@ -32,6 +32,13 @@ func (c *Client) MyCharacterVendorData(tok *oauth2.Token, membershipType db.Dest
 	return resp
 }
 
+func (c *Client) GetAllVendorsForCurrentCharacter(tok *oauth2.Token, membershipType db.DestinyMembershipType, characterID db.DestinyCharacterID) *GetAllVendorsForCurrentCharacterResponse {
+	req := &GetAllVendorsForCurrentCharacterRequest{int64(membershipType), string(characterID)}
+	resp := new(GetAllVendorsForCurrentCharacterResponse)
+	c.get(tok, req, resp)
+	return resp
+}
+
 func (c *Client) get(tok *oauth2.Token, req Request, resp Response) {
 	httpReq, err := http.NewRequest("GET", req.URL(), nil)
 	if err != nil {
