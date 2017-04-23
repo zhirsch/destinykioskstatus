@@ -21,6 +21,7 @@ var (
 	templatePath   = flag.String("template", "kiosk.html", "The path to the HTML template file.")
 	tlsCertPath    = flag.String("tlscert", "server.crt", "The path to the  TLS certificate file.")
 	tlsKeyPath     = flag.String("tlskey", "server.key", "The path to the TLS key file.")
+	mediaPath      = flag.String("media", "", "The path to the media directory.")
 )
 
 func main() {
@@ -40,6 +41,9 @@ func main() {
 	if *templatePath == "" {
 		log.Fatal("need to provide --template")
 	}
+	if *mediaPath == "" {
+		log.Fatal("need to provide --media")
+	}
 
 	authConfig := &oauth2.Config{
 		ClientID:  *apiKey,
@@ -54,6 +58,7 @@ func main() {
 
 	handlers := map[string]http.Handler{
 		"/BungieAuthCallback": handler.BungieAuthCallbackHandler{s, authConfig},
+		"/media/":             http.StripPrefix("/media/", http.FileServer(http.Dir(*mediaPath))),
 	}
 	authedHandlers := map[string]handler.Handler{
 		"/emblems":  handler.VendorHandler{s, 3301500998},
