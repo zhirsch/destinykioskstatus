@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <title>{{.Title}}</title>
     <style>
+      @import url('https://fonts.googleapis.com/css?family=Nunito:300');
+      body {
+        font-family: "Nunito";
+      }
+      h1 {
+        letter-spacing: 3px;
+      }
       .item {
         position: relative;
         float: left;
@@ -33,17 +40,17 @@
       {{.User}}
       &mdash;
       <a href="/emblems?c={{.CurrentCharacter}}">Emblems</a>
-      &bullet;
+      &middot;
       <a href="/shaders?c={{.CurrentCharacter}}">Shaders</a>
-      &bullet;
+      &middot;
       <a href="/ships?c={{.CurrentCharacter}}">Ships</a>
-      &bullet;
+      &middot;
       <a href="/sparrows?c={{.CurrentCharacter}}">Sparrows</a>
-      &bullet;
+      &middot;
       <a href="/emotes?c={{.CurrentCharacter}}">Emotes</a>
-      &bullet;
+      &middot;
       <a href="/weapons?c={{.CurrentCharacter}}">Weapons</a>
-      &bullet;
+      &middot;
       <a href="/armor?c={{.CurrentCharacter}}">Armor</a>
       &mdash;
       <select onchange="switchCharacter(this.value)">
