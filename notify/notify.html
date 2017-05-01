@@ -1,0 +1,20 @@
+<html>
+  <body>
+  {{range .}}
+    {{if .MissingAndForSale}}
+    <h1>{{.Title}}</h1>
+      {{range .Categories}}
+        {{if .MissingAndForSale}}
+          <h2>{{.Title}}</h2>
+          {{range .Items}}
+            {{if .Missing}}{{if .ForSale}}
+              <img src="{{.Icon}}" title="{{.Description}}" style="float: left; margin: 0 0 10px 10px" />
+            {{end}}{{end}}
+          {{end}}
+          <br style="clear: both;" />
+        {{end}}
+      {{end}}
+    {{end}}
+  {{end}}
+  </body>
+</html>
