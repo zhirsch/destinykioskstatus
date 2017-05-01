@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>{{.Title}}</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css?family=Nunito:300');
+      body {
+        font-family: "Nunito";
+      }
+      h1 {
+        letter-spacing: 3px;
+      }
+      .item {
+        position: relative;
+        float: left;
+        margin: 0 0 10px 10px;
+        width: 96px;
+        height: 96px;
+      }
+      .item > img, .item > span {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+      .item > .missing {
+        opacity: 0.1;
+      }
+    </style>
+    <script>
+      function switchCharacter(url) {
+        document.location = url;
+      }
+    </script>
+  </head>
+  <body>
+    <div>
+      {{.User}}
+      &mdash;
+      <a href="/emblems?c={{.CurrentCharacter}}">Emblems</a>
+      &middot;
+      <a href="/shaders?c={{.CurrentCharacter}}">Shaders</a>
+      &middot;
+      <a href="/ships?c={{.CurrentCharacter}}">Ships</a>
+      &middot;
+      <a href="/sparrows?c={{.CurrentCharacter}}">Sparrows</a>
+      &middot;
+      <a href="/emotes?c={{.CurrentCharacter}}">Emotes</a>
+      &middot;
+      <a href="/weapons?c={{.CurrentCharacter}}">Weapons</a>
+      &middot;
+      <a href="/armor?c={{.CurrentCharacter}}">Armor</a>
+      &mdash;
+      <select onchange="switchCharacter(this.value)">
+        {{range .Characters}}
+        <option value="{{.URL}}" {{if .Current}}selected="selected"{{end}}>{{.Class}}</option>
+        {{end}}
+      </select>
+    </div>
+    {{range .Categories}}
+    <h1>{{.Title}}</h1>
+    {{range .Items}}
+    <div class="item">
+      <img src="{{.Icon}}" title="{{.Description}}" {{if .Missing}}class="missing"{{end}} />
+      {{if .ForSale}}<img src="/media/dollar.png" title="{{.Description}}" />{{end}}
+    </div>
+    {{end}}
+    <br style="clear: both;" />
+    {{end}}
+  </body>
+</html>
