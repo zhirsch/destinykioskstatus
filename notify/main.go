@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"log"
+	"time"
 
 	sendgrid "github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
@@ -115,7 +116,7 @@ func main() {
 	}
 
 	from := mail.NewEmail(*fromName, *fromAddr)
-	subject := "Destiny Kiosk Status Update"
+	subject := time.Now().Format("Destiny Kiosk Status Update for 2006-01-02")
 	to := mail.NewEmail("", "zhirsch@umich.edu")
 
 	buf := new(bytes.Buffer)
