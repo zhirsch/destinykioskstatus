@@ -29,4 +29,8 @@ with tempfile.TemporaryFile() as tf:
     # Unzip the database to the current directory.
     tf.seek(0)
     with zipfile.ZipFile(tf, 'r') as f:
-        f.extractall()
+        names = f.namelist()
+        if len(names) != 1:
+          raise Exception("too many entries: %s", names)
+        f.extractall(path=os.path.dirname(sys.argv[2]))
+        os.symlink(names[0], sys.argv[2])
