@@ -8,8 +8,8 @@ import (
 	"github.com/zhirsch/oauth2"
 	"golang.org/x/net/context"
 
-	"github.com/zhirsch/destinykioskstatus/db"
-	"github.com/zhirsch/destinykioskstatus/server"
+	"github.com/zhirsch/destinykioskstatus/src/db"
+	"github.com/zhirsch/destinykioskstatus/src/server"
 )
 
 const (
