@@ -3,7 +3,7 @@ package handler
 import (
 	"net/http"
 
-	"github.com/zhirsch/destinykioskstatus/db"
+	"github.com/zhirsch/destinykioskstatus/src/db"
 )
 
 type Handler interface {

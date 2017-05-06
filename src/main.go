@@ -8,8 +8,8 @@ import (
 	"github.com/zhirsch/oauth2"
 	"github.com/zhirsch/oauth2/bungie"
 
-	"github.com/zhirsch/destinykioskstatus/handler"
-	"github.com/zhirsch/destinykioskstatus/server"
+	"github.com/zhirsch/destinykioskstatus/src/handler"
+	"github.com/zhirsch/destinykioskstatus/src/server"
 )
 
 var (

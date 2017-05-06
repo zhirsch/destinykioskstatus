@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/zhirsch/destinykioskstatus/db"
+	"github.com/zhirsch/destinykioskstatus/src/db"
 	"github.com/zhirsch/oauth2"
 	"golang.org/x/net/context"
 
