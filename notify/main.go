@@ -10,9 +10,9 @@ import (
 
 	sendgrid "github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
-	"github.com/zhirsch/destinykioskstatus/src/api"
-	"github.com/zhirsch/destinykioskstatus/src/db"
-	"github.com/zhirsch/destinykioskstatus/src/kiosk"
+	"github.com/zhirsch/destinykioskstatus/api"
+	"github.com/zhirsch/destinykioskstatus/db"
+	"github.com/zhirsch/destinykioskstatus/kiosk"
 	"github.com/zhirsch/oauth2"
 	"github.com/zhirsch/oauth2/bungie"
 )

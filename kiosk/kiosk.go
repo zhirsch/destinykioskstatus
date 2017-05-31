@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zhirsch/destinykioskstatus/src/api"
-	"github.com/zhirsch/destinykioskstatus/src/db"
+	"github.com/zhirsch/destinykioskstatus/api"
+	"github.com/zhirsch/destinykioskstatus/db"
 	"github.com/zhirsch/oauth2"
 )
 

@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/zhirsch/destinykioskstatus/src/db"
-	"github.com/zhirsch/destinykioskstatus/src/kiosk"
-	"github.com/zhirsch/destinykioskstatus/src/server"
+	"github.com/zhirsch/destinykioskstatus/db"
+	"github.com/zhirsch/destinykioskstatus/kiosk"
+	"github.com/zhirsch/destinykioskstatus/server"
 )
 
 type VendorHandler struct {

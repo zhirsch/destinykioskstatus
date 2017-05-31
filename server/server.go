@@ -5,8 +5,8 @@ import (
 
 	"github.com/zhirsch/oauth2"
 
-	"github.com/zhirsch/destinykioskstatus/src/api"
-	"github.com/zhirsch/destinykioskstatus/src/db"
+	"github.com/zhirsch/destinykioskstatus/api"
+	"github.com/zhirsch/destinykioskstatus/db"
 )
 
 type Server struct {
