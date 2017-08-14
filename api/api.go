@@ -53,6 +53,7 @@ func (c *Client) get(tok *oauth2.Token, req Request, resp Response) {
 			if err != nil {
 				return err
 			}
+			defer httpResp.Body.Close();
 			if httpResp.StatusCode != http.StatusOK {
 				return fmt.Errorf("bad response: %v", httpResp.StatusCode)
 			}
